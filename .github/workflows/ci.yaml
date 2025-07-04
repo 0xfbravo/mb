@@ -1,0 +1,85 @@
+name: 🧪 CI
+
+on:
+  # Actually this should be triggered on pull requests, but I don't want to spend too much time on this repo
+  push:
+    branches: [main, development]
+  # pull_request:
+  #   branches: [main, development]
+
+# Global environment variables
+env:
+  # Add timeout for the entire workflow
+  ACTIONS_RUNNER_TIMEOUT: 10m
+
+# Concurrency settings to prevent multiple workflows running for the same PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: 🛠️ Run Python CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      # Checkout code
+      - name: 📦 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for better versioning
+
+      # Setup Python environment
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+          cache: 'pip'  # Enable caching for faster builds
+
+      # Install system dependencies
+      - name: 📂 Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y make
+        continue-on-error: false
+
+      # Cache pip dependencies
+      - name: 📦 Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      # Setup Python environment
+      - name: 🔍 Setup Python environment
+        run: make setup
+        continue-on-error: false
+
+      # Run linting
+      - name: 🔍 Run linting
+        run: make lint
+        continue-on-error: false
+
+      # Run security checks
+      - name: 🔒 Run security checks
+        run: make security
+        continue-on-error: false
+
+      # Run tests and generate coverage
+      - name: 🧪 Run tests and generate coverage
+        run: make test/unit
+        continue-on-error: false
+
+      # Upload test coverage reports
+      - name: 📤 Upload coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: |
+            htmlcov/
+            .coverage
+            coverage.json
+          retention-days: 7  # Keep artifacts for 7 days

@@ -1,0 +1,56 @@
+services:
+  api:
+    image: "${CONTAINER_REGISTRY-localhost:5005}/mb:${VERSION-development}"
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - PORT=${PORT-8000}
+        - ENV=${ENV-dev}
+        - SERVICE=api
+        - VERSION=${VERSION-development}
+        - POSTGRES_URL=${POSTGRES_URL-localhost}
+        - POSTGRES_PORT=${POSTGRES_PORT-1425}
+        - POSTGRES_DB=${POSTGRES_DB-mb_db}
+        - POSTGRES_USER=${POSTGRES_USER-mb_user}
+        - POSTGRES_PASSWORD=${POSTGRES_PASSWORD-mb_password}
+    ports:
+      - "${PORT-8000}:${PORT-8000}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - mb-network
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import requests; requests.get('http://localhost:${PORT-8000}/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB-mb_db}
+      - POSTGRES_USER=${POSTGRES_USER-mb_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD-mb_password}
+    ports:
+      - "${POSTGRES_PORT-1425}:${POSTGRES_PORT-1425}"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - mb-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER-mb_user} -d ${POSTGRES_DB-mb_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+
+networks:
+  mb-network:
+    driver: bridge

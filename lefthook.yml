@@ -1,0 +1,15 @@
+pre-commit:
+  parallel: false
+  commands:
+    fmt-lint:
+      run: |
+        echo "🔧 Running formatter and linter..."
+        if ! make lint; then
+          echo "❌ Linting/formatting failed. Please fix the issues and try again."
+          exit 1
+        fi
+        if ! git diff --quiet; then
+          echo "⚠️ Code was formatted. Please review and re-stage changes."
+          git --no-pager diff
+          exit 1
+        fi
