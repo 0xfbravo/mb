@@ -90,3 +90,9 @@ jobs:
             .coverage
             coverage.json
           retention-days: 7  # Keep artifacts for 7 days
+
+      # Upload coverage reports to Codecov
+      - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
