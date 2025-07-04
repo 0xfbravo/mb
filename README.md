@@ -1,4 +1,5 @@
 # MB
+![Build Status](https://github.com/0xfbravo/mb/actions/workflows/ci.yaml/badge.svg)
 
 ![Python](https://img.shields.io/badge/Python_3.12-FFD43B?style=for-the-badge&logo=python&logoColor=blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0056B3?style=for-the-badge&logo=fastapi&logoColor=white)

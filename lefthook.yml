@@ -25,11 +25,3 @@ pre-commit:
           echo "❌ Security checks failed. Please fix the issues and try again."
           exit 1
         fi
-        echo "✅ Security checks passed."
-        echo "🔍 Running coverage..."
-        if ! make coverage; then
-          echo "❌ Coverage checks failed. Please fix the issues and try again."
-          exit 1
-        fi
-        echo "✅ Coverage checks passed."
-        echo "✅ All checks passed."

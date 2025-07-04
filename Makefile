@@ -9,6 +9,8 @@ MYPY=mypy
 ISORT=isort
 DOCKER_REGISTRY=gcr.io
 PROJECT_ID=mb
+UVICORN=uvicorn
+SAFETY=safety
 
 # Include .env file if it exists
 -include .env
@@ -40,26 +42,26 @@ setup-venv:
 		echo "${GREEN}✅ Virtual environment already exists${NC}"; \
 	fi
 	@echo "${CYAN}📦 Installing dependencies...${NC}"
-	@. venv/bin/activate && $(PIP) install -r requirements.txt --quiet
-	@. venv/bin/activate && $(PIP) install -r requirements-dev.txt --quiet
+	@venv/bin/${PIP} install -r requirements.txt --quiet
+	@venv/bin/${PIP} install -r requirements-dev.txt --quiet
 
 .PHONY: setup-lefthook
 setup-lefthook:
 	@echo "${CYAN}🔍 Installing lefthook via pip...${NC}"
-	@. venv/bin/activate && $(PIP) install lefthook --quiet
+	@venv/bin/${PIP} install lefthook --quiet
 	@echo "${GREEN}✅ lefthook installed${NC}"
 	@echo "${CYAN}🔧 Installing lefthook hooks...${NC}"
-	@. venv/bin/activate && lefthook install
+	@venv/bin/lefthook install
 
 .PHONY: setup-lint
 setup-lint:
 	@echo "${CYAN}🔍 Installing linting tools...${NC}"
-	@. venv/bin/activate && $(PIP) install flake8 mypy --quiet
+	@venv/bin/${PIP} install flake8 mypy --quiet
 
 .PHONY: setup-formatter
 setup-formatter:
 	@echo "${CYAN}🔍 Installing formatting tools...${NC}"
-	@. venv/bin/activate && $(PIP) install black isort --quiet
+	@venv/bin/${PIP} install black isort --quiet
 
 # Docker permission check
 .PHONY: check-docker
@@ -139,7 +141,7 @@ logs/postgres:
 .PHONY: install
 install:
 	@echo "${CYAN}📦 Installing package...${NC}"
-	@. venv/bin/activate && $(PIP) install -e . --quiet
+	@venv/bin/${PIP} install -e . --quiet
 
 # Clean target
 .PHONY: clean
@@ -162,23 +164,24 @@ test: clean setup check-docker test/unit test/integration coverage
 .PHONY: test/unit
 test/unit:
 	@echo "${CYAN}🐢 Running unit tests...${NC}"
-	@. venv/bin/activate && $(PYTEST) ./test/unit/ -v --cov=. --cov-report=term-missing --cov-report=html --cov-report=json
+	@venv/bin/${PYTHON} -m pytest ./test/unit/ -v --cov=. --cov-report=term-missing --cov-report=html --cov-report=json
 
 .PHONY: test/integration
 test/integration: check-docker
 	@echo "${CYAN}🏎️ Running integration tests...${NC}"
-	@. venv/bin/activate && $(PYTEST) ./test/integration/ -v
+	@venv/bin/${PYTHON} -m pytest ./test/integration/ -v
 
 .PHONY: test/all
 test/all:
 	@echo "${CYAN}🧪 Running all tests...${NC}"
-	@. venv/bin/activate && $(PYTEST) ./test/ -v --cov=. --cov-report=term-missing --cov-report=html --cov-report=json
+	@venv/bin/${PYTHON} -m pytest ./test/ -v --cov=. --cov-report=term-missing --cov-report=html --cov-report=json
 
 .PHONY: coverage
 coverage:
 	@echo "${CYAN}📊 Generating coverage report...${NC}"
-	@. venv/bin/activate && $(COVERAGE) report
-	@. venv/bin/activate && $(COVERAGE) html
+	@venv/bin/${PYTHON} -m coverage report
+	@venv/bin/${PYTHON} -m coverage html
+	@venv/bin/${PYTHON} -m coverage json
 
 # Mock generation (using pytest-mock)
 .PHONY: mocks
@@ -189,19 +192,19 @@ mocks:
 .PHONY: lint
 lint: setup-lint fmt
 	@echo "${CYAN}🔍 Running linter...${NC}"
-	@. venv/bin/activate && $(FLAKE8) app/ main.py
-	@. venv/bin/activate && $(MYPY) app/ main.py
+	@venv/bin/${FLAKE8} app/ main.py
+	@venv/bin/${MYPY} app/ main.py
 
 .PHONY: lint/fix
 lint/fix: setup-lint
 	@echo "${CYAN}🔍 Running linter with auto-fix...${NC}"
-	@. venv/bin/activate && $(FLAKE8) . --count --select=E9,F63,F7,F82 --show-source --statistics
+	@venv/bin/${FLAKE8} . --count --select=E9,F63,F7,F82 --show-source --statistics
 
 .PHONY: fmt
 fmt: setup-formatter
 	@echo "${CYAN}🎨 Formatting code...${NC}"
-	@. venv/bin/activate && $(BLACK) .
-	@. venv/bin/activate && $(ISORT) .
+	@venv/bin/${BLACK} .
+	@venv/bin/${ISORT} .
 
 .PHONY: code-pattern
 code-pattern: fmt lint/fix
@@ -210,38 +213,38 @@ code-pattern: fmt lint/fix
 .PHONY: deps
 deps:
 	@echo "${CYAN}📦 Installing dependencies...${NC}"
-	@. venv/bin/activate && $(PIP) install -r requirements.txt --quiet
+	@venv/bin/${PIP} install -r requirements.txt --quiet
 
 .PHONY: deps/update
 deps/update:
 	@echo "${CYAN}📦 Updating dependencies...${NC}"
-	@. venv/bin/activate && $(PIP) install --upgrade -r requirements.txt --quiet
-	@. venv/bin/activate && $(PIP) install --upgrade -r requirements-dev.txt --quiet
+	@venv/bin/${PIP} install --upgrade -r requirements.txt --quiet
+	@venv/bin/${PIP} install --upgrade -r requirements-dev.txt --quiet
 
 .PHONY: deps/compile
 deps/compile:
 	@echo "${CYAN}📦 Compiling requirements...${NC}"
-	@. venv/bin/activate && $(PIP) install pip-tools --quiet
-	@. venv/bin/activate && pip-compile requirements.in --strip-extras
-	@. venv/bin/activate && pip-compile requirements-dev.in --strip-extras
+	@venv/bin/${PIP} install pip-tools --quiet
+	@venv/bin/${PIP} compile requirements.in --strip-extras
+	@venv/bin/${PIP} compile requirements-dev.in --strip-extras
 
 # Security checks
 .PHONY: security
 security:
 	@echo "${CYAN}🔒 Running security checks...${NC}"
-	@. venv/bin/activate && $(PIP) install safety --quiet
-	@. venv/bin/activate && safety scan
+	@venv/bin/${PIP} install safety --quiet
+	@venv/bin/${SAFETY} scan
 
 # Development server
 .PHONY: run
 run:
 	@echo "${CYAN}🚀 Starting development server...${NC}"
-	@. venv/bin/activate && uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+	@venv/bin/${UVICORN} main:app --host 0.0.0.0 --port 8000 --reload
 
 .PHONY: run/dev
 run/dev:
 	@echo "${CYAN}🚀 Starting development server with auto-reload...${NC}"
-	@. venv/bin/activate && uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+	@venv/bin/${UVICORN} main:app --host 0.0.0.0 --port 8000 --reload
 
 # Help target
 .PHONY: help
