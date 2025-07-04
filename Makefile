@@ -162,17 +162,17 @@ test: clean setup check-docker test/unit test/integration coverage
 .PHONY: test/unit
 test/unit:
 	@echo "${CYAN}🐢 Running unit tests...${NC}"
-	@. venv/bin/activate && $(PYTEST) test/unit/ -v --cov=. --cov-report=term-missing --cov-report=html --cov-report=json
+	@. venv/bin/activate && $(PYTEST) ./test/unit/ -v --cov=. --cov-report=term-missing --cov-report=html --cov-report=json
 
 .PHONY: test/integration
 test/integration: check-docker
 	@echo "${CYAN}🏎️ Running integration tests...${NC}"
-	@. venv/bin/activate && $(PYTEST) test/integration/ -v
+	@. venv/bin/activate && $(PYTEST) ./test/integration/ -v
 
 .PHONY: test/all
 test/all:
 	@echo "${CYAN}🧪 Running all tests...${NC}"
-	@. venv/bin/activate && $(PYTEST) test/ -v --cov=. --cov-report=term-missing --cov-report=html --cov-report=json
+	@. venv/bin/activate && $(PYTEST) ./test/ -v --cov=. --cov-report=term-missing --cov-report=html --cov-report=json
 
 .PHONY: coverage
 coverage:
