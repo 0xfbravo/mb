@@ -53,14 +53,18 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      # Setup Python environment
-      - name: 🔍 Setup Python environment
-        run: make setup
+      # Install Python dependencies
+      - name: 📦 Install Python dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
         continue-on-error: false
 
       # Run linting
       - name: 🔍 Run linting
-        run: make lint
+        run: |
+          flake8 app/ main.py
+          mypy app/ main.py
         continue-on-error: false
 
       # Run security checks
@@ -72,7 +76,8 @@ jobs:
 
       # Run tests and generate coverage
       - name: 🧪 Run tests and generate coverage
-        run: make test/unit
+        run: |
+          python -m pytest ./test/unit/ -v --cov=. --cov-report=term-missing --cov-report=html --cov-report=json
         continue-on-error: false
 
       # Upload test coverage reports
