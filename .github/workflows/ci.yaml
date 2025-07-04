@@ -64,9 +64,11 @@ jobs:
         continue-on-error: false
 
       # Run security checks
+      - uses: actions/checkout@main
       - name: 🔒 Run security checks
-        run: make security
-        continue-on-error: false
+        uses: pyupio/safety-action@v1
+        with:
+          api-key: ${{ secrets.SAFETY_API_KEY }}
 
       # Run tests and generate coverage
       - name: 🧪 Run tests and generate coverage

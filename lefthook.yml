@@ -13,3 +13,23 @@ pre-commit:
           git --no-pager diff
           exit 1
         fi
+        echo "✅ Linting/formatting passed."
+        echo "🔍 Running tests..."
+        if ! make test/unit; then
+          echo "❌ Tests failed. Please fix the issues and try again."
+          exit 1
+        fi
+        echo "✅ Tests passed."
+        echo "🔍 Running security checks..."
+        if ! make security; then
+          echo "❌ Security checks failed. Please fix the issues and try again."
+          exit 1
+        fi
+        echo "✅ Security checks passed."
+        echo "🔍 Running coverage..."
+        if ! make coverage; then
+          echo "❌ Coverage checks failed. Please fix the issues and try again."
+          exit 1
+        fi
+        echo "✅ Coverage checks passed."
+        echo "✅ All checks passed."
