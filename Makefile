@@ -45,17 +45,11 @@ setup-venv:
 
 .PHONY: setup-lefthook
 setup-lefthook:
-	@echo "${CYAN}🔍 Checking if lefthook is installed...${NC}"
-	@if ! command -v lefthook > /dev/null 2>&1; then \
-		echo "${RED}❌ lefthook is not installed. Please install it first:${NC}"; \
-		echo "curl -1sLf 'https://dl.cloudsmith.io/public/evilmartians/lefthook/setup.deb.sh' | sudo -E bash"; \
-		echo "sudo apt-get update && sudo apt-get install lefthook"; \
-		echo "Or visit: https://github.com/evilmartians/lefthook#installation"; \
-		exit 1; \
-	fi
-	@echo "${GREEN}✅ lefthook is installed${NC}"
+	@echo "${CYAN}🔍 Installing lefthook via pip...${NC}"
+	@. venv/bin/activate && $(PIP) install lefthook --quiet
+	@echo "${GREEN}✅ lefthook installed${NC}"
 	@echo "${CYAN}🔧 Installing lefthook hooks...${NC}"
-	@lefthook install
+	@. venv/bin/activate && lefthook install
 
 .PHONY: setup-lint
 setup-lint:
