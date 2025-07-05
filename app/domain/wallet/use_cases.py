@@ -105,11 +105,10 @@ class WalletUseCases:
             self.logger.error(f"Unexpected error getting wallet {address}: {e}")
             raise
 
-    async def update_balance(self, address: str, balance: float) -> Wallet:
-        """Update wallet balance."""
+    async def delete_wallet(self, address: str) -> Wallet:
+        """Delete wallet by address."""
 
-        self.logger.info(f"Updating wallet balance: {address} to {balance}")
-        db_wallet = await self.wallet_repo.update_balance(address, balance)
-        self.logger.info(f"Successfully updated wallet balance: {address}")
-
+        self.logger.info(f"Deleting wallet: {address}")
+        db_wallet = await self.wallet_repo.delete(address)
+        self.logger.info(f"Successfully deleted wallet: {address}")
         return Wallet.from_data(db_wallet)

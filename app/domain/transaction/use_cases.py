@@ -1,4 +1,5 @@
 from typing import Any
+from uuid import UUID
 
 from app.data.database import TransactionRepository
 from app.domain.transaction.models import (CreateTx, Pagination, Transaction,
@@ -31,7 +32,7 @@ class TransactionUseCases:
             self.logger.error(f"Unexpected error creating transaction: {e}")
             raise
 
-    async def get_by_id(self, transaction_id: str) -> Transaction:
+    async def get_by_id(self, transaction_id: UUID) -> Transaction:
         """Get transaction by ID."""
         try:
             db_transaction = await self.tx_repo.get_by_id(transaction_id)

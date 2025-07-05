@@ -95,3 +95,24 @@ async def get_wallet(
     except Exception as e:
         di.logger.error(f"Error getting wallet: {e}")
         raise HTTPException(status_code=404, detail="Wallet not found")
+
+
+@router.delete("/{address}", tags=[wallet_tag])
+async def delete_wallet(
+    request: Request,
+    address: str,
+    di: Annotated[DependencyInjection, Depends(get_dependency_injection)],
+) -> Wallet:
+    """
+    Delete wallet by address.
+    """
+    try:
+        di.ensure_database_initialized()
+        di.logger.info(f"Deleting wallet: {address}")
+        return await di.wallet_uc.delete_wallet(address)
+    except RuntimeError as e:
+        di.logger.error(f"Database not initialized: {e}")
+        raise HTTPException(status_code=503, detail="Database not available")
+    except Exception as e:
+        di.logger.error(f"Error deleting wallet: {e}")
+        raise HTTPException(status_code=500, detail="Unable to delete wallet")

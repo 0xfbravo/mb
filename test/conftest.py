@@ -77,7 +77,6 @@ def mock_wallet_repository():
     repo.create = AsyncMock()
     repo.get_by_address = AsyncMock()
     repo.get_by_id = AsyncMock()
-    repo.update_balance = AsyncMock()
     repo.get_all = AsyncMock()
     return repo
 

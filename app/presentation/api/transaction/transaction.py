@@ -1,4 +1,5 @@
 from typing import Annotated, Optional
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 
@@ -27,7 +28,7 @@ async def create_tx(
 async def get_transactions(
     di: Annotated[DependencyInjection, Depends(get_dependency_injection)],
     transaction_id: Annotated[
-        Optional[str], Query(description="Transaction ID to search by")
+        Optional[UUID], Query(description="Transaction ID to search by")
     ] = None,
     tx_hash: Annotated[
         Optional[str], Query(description="Transaction hash to search by")

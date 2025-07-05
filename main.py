@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
 
 from app import DependencyInjection, router, setup_loguru
 
@@ -67,5 +68,25 @@ async def lifespan(app: FastAPI):
 
 
 # Create app with lifespan handler
-app = FastAPI(lifespan=lifespan)
+title = os.getenv("TITLE", "")
+version = os.getenv("VERSION", "")
+description = os.getenv("DESCRIPTION", "")
+app = FastAPI(
+    title=title,
+    contact={
+        "name": "Fellipe Bravo",
+        "url": "https://github.com/0xfbravo",
+        "email": "0xfbravo@gmail.com",
+    },
+    description=description,
+    version=version,
+    lifespan=lifespan,
+)
+
+
+@app.get("/", include_in_schema=False)
+async def root():
+    return RedirectResponse(url="/docs")
+
+
 app.include_router(router)

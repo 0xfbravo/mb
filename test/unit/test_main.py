@@ -4,9 +4,13 @@ Unit tests for the main application module.
 These tests verify individual functions and components in isolation.
 """
 
+import os
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 class TestMainModuleUnit:
@@ -102,8 +106,8 @@ class TestMainModuleUnit:
         app = main.app
 
         # Test that the app has the expected configuration
-        assert app.title == "FastAPI"
-        assert app.version == "0.1.0"
+        assert app.title == os.getenv("TITLE", "")
+        assert app.version == os.getenv("VERSION", "")
         assert app.description is not None
 
     def test_router_structure(self):

@@ -7,6 +7,11 @@ from tortoise import fields
 from tortoise.exceptions import OperationalError
 from tortoise.models import Model
 
+from app.data.database.errors import (DatabaseConnectionError,
+                                      TransactionCreationError,
+                                      TransactionNotFoundError,
+                                      TransactionRetrievalError,
+                                      TransactionUpdateError)
 from app.data.database.main import DatabaseManager
 
 
@@ -55,32 +60,42 @@ class TransactionRepository:
             )
         except (OperationalError, ConnectionDoesNotExistError) as e:
             self.logger.error(f"Database connection error in create: {e}")
-            raise RuntimeError("Database connection error")
+            raise DatabaseConnectionError("create", e)
         except Exception as e:
             self.logger.error(f"Error creating transaction: {e}")
-            raise
+            raise TransactionCreationError(wallet_address, amount, currency, e)
 
-    async def get_by_id(self, transaction_id: str) -> Transaction:
+    async def get_by_id(self, transaction_id: uuid.UUID) -> Transaction:
         """Get transaction by ID."""
         try:
-            return await Transaction.get(id=transaction_id)
+            transaction = await Transaction.get(id=transaction_id)
+            if not transaction:
+                raise TransactionNotFoundError(f"id: {transaction_id}")
+            return transaction
         except (OperationalError, ConnectionDoesNotExistError) as e:
             self.logger.error(f"Database connection error in get_by_id: {e}")
-            raise RuntimeError("Database connection error")
+            raise DatabaseConnectionError("get_by_id", e)
+        except TransactionNotFoundError:
+            raise
         except Exception as e:
             self.logger.error(f"Error getting transaction by ID: {e}")
-            raise
+            raise TransactionRetrievalError("getting by ID", str(transaction_id), e)
 
     async def get_by_tx_hash(self, tx_hash: str) -> Transaction:
         """Get transaction by transaction hash."""
         try:
-            return await Transaction.get(tx_hash=tx_hash)
+            transaction = await Transaction.get(tx_hash=tx_hash)
+            if not transaction:
+                raise TransactionNotFoundError(f"hash: {tx_hash}")
+            return transaction
         except (OperationalError, ConnectionDoesNotExistError) as e:
             self.logger.error(f"Database connection error in get_by_tx_hash: {e}")
-            raise RuntimeError("Database connection error")
+            raise DatabaseConnectionError("get_by_tx_hash", e)
+        except TransactionNotFoundError:
+            raise
         except Exception as e:
             self.logger.error(f"Error getting transaction by hash: {e}")
-            raise
+            raise TransactionRetrievalError("getting by hash", tx_hash, e)
 
     async def get_by_wallet(
         self, wallet_address: str, offset: int = 0, limit: int = 100
@@ -94,10 +109,10 @@ class TransactionRepository:
             )
         except (OperationalError, ConnectionDoesNotExistError) as e:
             self.logger.error(f"Database connection error in get_by_wallet: {e}")
-            raise RuntimeError("Database connection error")
+            raise DatabaseConnectionError("get_by_wallet", e)
         except Exception as e:
             self.logger.error(f"Error getting transactions by wallet: {e}")
-            raise
+            raise TransactionRetrievalError("getting by wallet", wallet_address, e)
 
     async def update_status(
         self, transaction_id: str, status: TransactionStatus
@@ -105,15 +120,19 @@ class TransactionRepository:
         """Update transaction status."""
         try:
             transaction = await Transaction.get(id=transaction_id)
+            if not transaction:
+                raise TransactionNotFoundError(f"id: {transaction_id}")
             transaction.status = status
             await transaction.save()
             return transaction
         except (OperationalError, ConnectionDoesNotExistError) as e:
             self.logger.error(f"Database connection error in update_status: {e}")
-            raise RuntimeError("Database connection error")
+            raise DatabaseConnectionError("update_status", e)
+        except TransactionNotFoundError:
+            raise
         except Exception as e:
             self.logger.error(f"Error updating transaction status: {e}")
-            raise
+            raise TransactionUpdateError(transaction_id, "updating status", e)
 
     async def get_all(self, offset: int = 0, limit: int = 100) -> list[Transaction]:
         """Get all transactions."""
@@ -126,7 +145,7 @@ class TransactionRepository:
             )
         except (OperationalError, ConnectionDoesNotExistError) as e:
             self.logger.error(f"Database connection error in get_all: {e}")
-            raise RuntimeError("Database connection error")
+            raise DatabaseConnectionError("get_all", e)
         except Exception as e:
             self.logger.error(f"Error getting all transactions: {e}")
-            raise
+            raise TransactionRetrievalError("getting all transactions", "all", e)
