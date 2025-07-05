@@ -67,11 +67,15 @@ setup-formatter:
 .PHONY: check-docker
 check-docker:
 	@echo "${CYAN}🔍 Checking Docker permissions...${NC}"
-	@if ! groups | grep -q docker; then \
-		echo "${RED}❌ Your user is not in the docker group. Please run:${NC}"; \
-		echo "sudo usermod -aG docker $$USER"; \
-		echo "Then log out and log back in, or run: newgrp docker"; \
-		exit 1; \
+	@if [ "$$(uname)" = "Darwin" ]; then \
+		echo "${YELLOW}⚠️ Skipping docker group check on macOS${NC}"; \
+	else \
+		if ! groups | grep -q docker; then \
+			echo "${RED}❌ Your user is not in the docker group. Please run:${NC}"; \
+			echo "sudo usermod -aG docker $$USER"; \
+			echo "Then log out and log back in, or run: newgrp docker"; \
+			exit 1; \
+		fi; \
 	fi
 	@if ! docker info > /dev/null 2>&1; then \
 		echo "${RED}❌ Cannot connect to Docker daemon. Please ensure Docker is running and you have proper permissions.${NC}"; \
