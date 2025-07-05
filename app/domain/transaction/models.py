@@ -57,7 +57,11 @@ class Transaction(BaseModel):
             amount=db_transaction.amount,
             gas_price=db_transaction.gas_price,
             gas_limit=db_transaction.gas_limit,
-            status=DBTransactionStatus(db_transaction.status.value) if db_transaction.status else None,
+            status=(
+                DBTransactionStatus(db_transaction.status.value)
+                if db_transaction.status
+                else None
+            ),
             created_at=db_transaction.created_at,
             updated_at=db_transaction.updated_at,
         )
