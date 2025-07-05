@@ -101,25 +101,54 @@ The project follows Clean Architecture principles with clear separation of conce
 
 ### Layers
 
-1. **API Layer** (`app/presentation/api/`)
-   - Implements REST API endpoints
+1. **Presentation** (`app/presentation`)
+   - Implements REST API endpoints (e.g. `app/presentation/api/`)
    - Handles request/response transformation
    - Calls domain layers to perform business logic
+   - Can interact with user's input and output in multiple ways (e.g. CLI, HTTP, etc.)
 
-2. **Service Layer** (`app/domain/services/`)
-   - Contains business logic and rules
-   - Implements use cases
-   - Independent of external frameworks
-
-3. **Repository Layer** (`app/data/repositories/`)
+2. **Data** (`app/data/`)
+   - Handles external dependencies like database, cache, and external service integrations (e.g. `app/data/evm/`)
    - Implements data access interfaces
-   - Handles external dependencies
-   - Database, cache, and external service integrations
 
-4. **Domain Layer** (`app/domain/models/`)
-   - Defines data models and entities
+3. **Domain** (`app/domain/`)
+   - Defines data models and entities split into sub-folders (e.g. `app/domain/wallet/`)
    - Contains domain-specific logic
-   - Independent of infrastructure concerns
+   - Independent of infrastructure concerns, exclusively responsible for business logic
+
+## 🌐 Web3 Configuration
+
+This application is configured to work with any EVM compatible blockchain.
+
+### 🔗 Connection to a remote node
+
+To connect to a remote node, set the `USE_TEST_PROVIDER` environment variable to `False` and set the `RPC_URL` environment variable to the URL of the remote node. On .env.example we're connection to the **Ethereum Sepolia testnet**.
+```bash
+# Example for Infura
+USE_TEST_PROVIDER=False
+RPC_URL=https://sepolia.infura.io/v3/YOUR_INFURA_PROJECT_ID
+# or
+# Example for Sepolia testnet
+RPC_URL=https://rpc.sepolia.dev
+```
+
+### 🔗 Connection to a test node (Infura)
+
+To connect to a test node, set the `USE_TEST_PROVIDER` environment variable to `True` and the `RPC_URL` will be ignored.
+```bash
+# Example for Infura
+USE_TEST_PROVIDER=True
+RPC_URL=https://sepolia.infura.io/v3/YOUR_INFURA_PROJECT_ID
+```
+
+### 🔗 Connection to a local node
+
+To connect to a local node, set the `USE_TEST_PROVIDER` environment variable to `False` and set the `RPC_URL` as your local node URL.
+```bash
+# Example for Ganache or any other local node
+USE_TEST_PROVIDER=False
+RPC_URL=http://localhost:8545
+```
 
 ## 🗄️ Database Configuration
 
@@ -142,20 +171,6 @@ DB_POOL_MIN_SIZE=1          # Minimum number of connections in the pool
 DB_POOL_MAX_SIZE=10         # Maximum number of connections in the pool
 DB_POOL_MAX_IDLE=300        # Maximum time (seconds) a connection can be idle
 DB_POOL_TIMEOUT=30          # Timeout (seconds) for getting a connection from the pool
-```
-
-### Pool Statistics
-
-You can monitor the connection pool performance using the `get_pool_stats()` method:
-
-```python
-from app.data.database import DatabaseManager
-
-# Get pool statistics
-stats = await db_manager.get_pool_stats()
-print(f"Pool size: {stats['pool_size']}")
-print(f"Checked out connections: {stats['checked_out']}")
-print(f"Available connections: {stats['checked_in']}")
 ```
 
 ## 🧪 Testing
@@ -224,12 +239,6 @@ make security       # Run security checks
 make run            # Run the application
 make run/dev        # Run with auto-reload
 make mocks          # Mock generation info
-make docker-build   # Build Docker image (requires SERVICE=<service_name>)
-```
-
-Note: For `docker-build`, you need to specify the service name:
-```bash
-make docker-build SERVICE=<service_name>
 ```
 
 ## 📦 Dependency Management
