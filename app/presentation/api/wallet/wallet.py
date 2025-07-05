@@ -1,8 +1,8 @@
-from typing import Annotated
+from typing import Annotated, Dict, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Query
 
-from app.domain.wallet.models import Wallet
+from app.domain.wallet.models import Wallet, WalletsPagination
 from app.utils.di import DependencyInjection, get_dependency_injection
 
 # Tags
@@ -20,6 +20,7 @@ async def create_wallet(
     This endpoint is responsible for creating multiple wallets,
     returning the address, private keys and public keys.
     """
+    di.ensure_database_initialized()
     di.logger.info("Creating wallet")
     try:
         return await di.wallet_uc.create()
@@ -31,13 +32,19 @@ async def create_wallet(
 async def get_wallets(
     request: Request,
     di: Annotated[DependencyInjection, Depends(get_dependency_injection)],
-) -> list[Wallet]:
+    page: Annotated[int, Query(ge=1, description="Page number")] = 1,
+    limit: Annotated[int, Query(ge=1, le=1000, description="Number of items to return")] = 100,
+) -> WalletsPagination:
     """
-    Get all wallets.
+    Get all wallets with pagination.
+    
+    - **offset**: Number of items to skip (for pagination)
+    - **limit**: Number of items to return (max 1000)
     """
-    di.logger.info("Getting wallets")
+    di.ensure_database_initialized()
+    di.logger.info(f"Getting wallets with pagination: page={page}, limit={limit}")
     try:
-        return await di.wallet_uc.get_all()
+        return await di.wallet_uc.get_all(page=page, limit=limit)
     except Exception as e:
         di.logger.error(f"Error getting wallets: {e}")
         raise HTTPException(status_code=400, detail="Unable to get wallets")
@@ -51,6 +58,7 @@ async def get_wallet(
     """
     Get wallet information by address.
     """
+    di.ensure_database_initialized()
     try:
         di.logger.info("Getting wallet")
         return await di.wallet_uc.get_by_address(address)

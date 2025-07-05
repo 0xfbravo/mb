@@ -56,6 +56,10 @@ class WalletRepository:
         await wallet.save()
         return wallet
 
-    async def get_all(self) -> list[Wallet]:
-        """Get all wallets."""
-        return await Wallet.all()
+    async def get_all(self, offset: int = 0, limit: int = 100) -> list[Wallet]:
+        """Get all wallets with pagination."""
+        return await Wallet.all().offset(offset).limit(limit)
+
+    async def get_count(self) -> int:
+        """Get total count of wallets."""
+        return await Wallet.all().count()

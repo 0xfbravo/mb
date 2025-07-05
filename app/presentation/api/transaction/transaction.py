@@ -18,6 +18,7 @@ async def create_tx(
     """
     Create a new transaction.
     """
+    di.ensure_database_initialized()
     return await di.tx_uc.create(tx)
 
 
@@ -29,6 +30,7 @@ async def get_transaction(
     """
     Get transaction by ID.
     """
+    di.ensure_database_initialized()
     return await di.tx_uc.get_by_id(transaction_id)
 
 
@@ -39,6 +41,7 @@ async def get_transaction_by_tx_hash(
     """
     Get transaction by transaction hash.
     """
+    di.ensure_database_initialized()
     return await di.tx_uc.get_by_tx_hash(tx_hash)
 
 
@@ -50,4 +53,5 @@ async def get_wallet_transactions(
     """
     Get all transactions for a wallet.
     """
+    di.ensure_database_initialized()
     return await di.tx_uc.get_txs(wallet_address)

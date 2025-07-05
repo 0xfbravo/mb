@@ -61,6 +61,8 @@ class DatabaseManager:
 
         # Generate schemas
         await Tortoise.generate_schemas()
+        
+        self.logger.info("Tortoise ORM initialized successfully")
 
         self.logger.info("Database connection pool initialized successfully ")
 
@@ -70,9 +72,12 @@ class DatabaseManager:
 
         # Close Tortoise connections
         try:
+            # Try to close Tortoise connections - this will fail gracefully if not initialized
             await Tortoise.close_connections()
+            self.logger.info("Tortoise connections closed successfully")
         except Exception as e:
-            self.logger.warning(f"Error closing Tortoise connections: {e}")
+            # This is expected if Tortoise was never initialized or already closed
+            self.logger.debug(f"Tortoise connections already closed or not initialized: {e}")
 
         # Close the connection pool
         if self._pool:
@@ -82,6 +87,8 @@ class DatabaseManager:
                 self.logger.info("Database connection pool closed successfully")
             except Exception as e:
                 self.logger.error(f"Error closing connection pool: {e}")
+        else:
+            self.logger.info("No connection pool to close")
 
     async def is_healthy(self) -> bool:
         """Check if the connection pool is healthy by performing a simple query."""

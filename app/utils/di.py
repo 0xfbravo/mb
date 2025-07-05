@@ -97,3 +97,8 @@ class DependencyInjection:
     def is_database_initialized(self) -> bool:
         """Check if the database has been initialized."""
         return hasattr(self, "_db_initialized") and self._db_initialized
+
+    def ensure_database_initialized(self):
+        """Ensure the database is initialized before use."""
+        if not self.is_database_initialized():
+            raise RuntimeError("Database not initialized. Call initialize() first.")

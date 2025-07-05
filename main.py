@@ -53,7 +53,8 @@ async def lifespan(app: FastAPI):
         di.logger.info("Dependency injection initialized successfully.")
     except Exception as e:
         di.logger.error(f"Error during startup: {e}")
-        raise e
+        # Don't raise the exception immediately, let the app start but mark it as unhealthy
+        di.logger.warning("Application starting with database initialization failure")
 
     yield
 
@@ -62,6 +63,7 @@ async def lifespan(app: FastAPI):
         di.logger.info("Dependency injection shutdown complete.")
     except Exception as e:
         di.logger.error(f"Error during shutdown: {e}")
+        # Don't re-raise shutdown errors as they're not critical
 
 
 # Create app with lifespan handler

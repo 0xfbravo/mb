@@ -1,8 +1,9 @@
 import uuid
-from typing import Any
+import asyncio
+from typing import Any, Dict, List
 
 from app.data.database import WalletRepository
-from app.domain.wallet.models import Wallet
+from app.domain.wallet.models import Wallet, WalletsPagination, Pagination
 
 
 class WalletUseCases:
@@ -31,12 +32,33 @@ class WalletUseCases:
             private_key=db_wallet.private_key,
         )
 
-    async def get_all(self) -> list[Wallet]:
-        """Get all wallets."""
-        self.logger.info("Getting all wallets")
-        db_wallets = await self.wallet_repo.get_all()
-        self.logger.info(f"Successfully retrieved {len(db_wallets)} wallets")
-        return [Wallet(address=wallet.address, private_key=wallet.private_key) for wallet in db_wallets]
+    async def get_all(self, page: int = 1, limit: int = 100) -> WalletsPagination:
+        """Get all wallets with pagination."""
+        self.logger.info(f"Getting wallets with pagination: page={page}, limit={limit}")
+        
+        # Get paginated wallets and total count
+        db_wallets, total_count = await asyncio.gather(
+            self.wallet_repo.get_all(offset=(page - 1) * limit, limit=limit),
+            self.wallet_repo.get_count()
+        )
+        
+        wallets = [Wallet(address=wallet.address, private_key=wallet.private_key) for wallet in db_wallets]
+        
+        # Calculate pagination metadata
+        total_pages = (total_count + limit - 1) // limit
+        current_page = page
+        
+        self.logger.info(f"Successfully retrieved {len(wallets)} wallets out of {total_count} total")
+        
+        return WalletsPagination(
+            wallets=wallets,
+            pagination=Pagination(
+                total=total_count,
+                page=current_page,
+                next_page=current_page + 1 if current_page < total_pages else None,
+                prev_page=current_page - 1 if current_page > 1 else None,
+            ),
+        )
 
     async def get_by_address(self, address: str) -> Wallet:
         """Get wallet by address."""
