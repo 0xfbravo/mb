@@ -5,7 +5,7 @@ from eth_account.signers.local import LocalAccount
 from eth_typing import Address
 from eth_typing.evm import Hash32
 from hexbytes import HexBytes
-from web3 import Web3, EthereumTesterProvider
+from web3 import EthereumTesterProvider, Web3
 from web3.types import TxParams, TxReceipt
 
 
@@ -16,7 +16,11 @@ class EVMService:
         """
         Initialize the EVM service.
         """
-        self.w3 = Web3(EthereumTesterProvider()) if use_test_provider else Web3(Web3.HTTPProvider(rpc_url))
+        self.w3 = (
+            Web3(EthereumTesterProvider())
+            if use_test_provider
+            else Web3(Web3.HTTPProvider(rpc_url))
+        )
         self.logger = logger
 
     # Create a new wallet
