@@ -4,6 +4,12 @@
 #
 #    pip-compile --strip-extras requirements.in
 #
+aiohappyeyeballs==2.6.1
+    # via aiohttp
+aiohttp==3.12.13
+    # via web3
+aiosignal==1.4.0
+    # via aiohttp
 aiosqlite==0.21.0
     # via tortoise-orm
 annotated-types==0.7.0
@@ -14,38 +20,106 @@ anyio==4.9.0
     #   watchfiles
 asyncpg==0.30.0
     # via -r requirements.in
+attrs==25.3.0
+    # via aiohttp
+bitarray==3.4.3
+    # via eth-account
 certifi==2025.6.15
     # via requests
 charset-normalizer==3.4.2
     # via requests
+ckzg==2.1.1
+    # via eth-account
 click==8.0.2
     # via
     #   -r requirements.in
     #   uvicorn
+cytoolz==1.0.1
+    # via eth-utils
+eth-abi==5.2.0
+    # via
+    #   eth-account
+    #   web3
+eth-account==0.13.7
+    # via web3
+eth-hash==0.7.1
+    # via
+    #   eth-utils
+    #   web3
+eth-keyfile==0.8.1
+    # via eth-account
+eth-keys==0.7.0
+    # via
+    #   eth-account
+    #   eth-keyfile
+eth-rlp==2.2.0
+    # via eth-account
+eth-typing==5.2.1
+    # via
+    #   eth-abi
+    #   eth-keys
+    #   eth-utils
+    #   web3
+eth-utils==5.3.0
+    # via
+    #   eth-abi
+    #   eth-account
+    #   eth-keyfile
+    #   eth-keys
+    #   eth-rlp
+    #   rlp
+    #   web3
 fastapi==0.115.14
     # via -r requirements.in
+frozenlist==1.7.0
+    # via
+    #   aiohttp
+    #   aiosignal
 h11==0.16.0
     # via uvicorn
+hexbytes==1.3.1
+    # via
+    #   eth-account
+    #   eth-rlp
+    #   web3
 httptools==0.6.4
     # via uvicorn
 idna==3.10
     # via
     #   anyio
     #   requests
+    #   yarl
 iso8601==2.1.0
     # via tortoise-orm
 loguru==0.7.3
     # via -r requirements.in
+multidict==6.6.3
+    # via
+    #   aiohttp
+    #   yarl
+parsimonious==0.10.0
+    # via eth-abi
+propcache==0.3.2
+    # via
+    #   aiohttp
+    #   yarl
 psycopg==3.2.9
     # via tortoise-orm
 psycopg-binary==3.2.9
     # via psycopg
 psycopg-pool==3.2.6
     # via psycopg
+pycryptodome==3.23.0
+    # via
+    #   eth-hash
+    #   eth-keyfile
 pydantic==2.9.2
     # via
     #   -r requirements.in
+    #   eth-account
+    #   eth-utils
     #   fastapi
+    #   web3
 pydantic-core==2.23.4
     # via pydantic
 pypika-tortoise==0.6.1
@@ -58,30 +132,54 @@ python-multipart==0.0.20
     # via -r requirements.in
 pytz==2025.2
     # via tortoise-orm
+pyunormalize==16.0.0
+    # via web3
 pyyaml==6.0.2
     # via uvicorn
+regex==2024.11.6
+    # via parsimonious
 requests==2.32.4
-    # via -r requirements.in
+    # via
+    #   -r requirements.in
+    #   web3
+rlp==4.1.0
+    # via
+    #   eth-account
+    #   eth-rlp
 sniffio==1.3.1
     # via anyio
 starlette==0.46.2
     # via fastapi
+toolz==1.0.0
+    # via cytoolz
 tortoise-orm==0.25.1
     # via -r requirements.in
+types-requests==2.32.4.20250611
+    # via web3
 typing-extensions==4.14.1
     # via
     #   aiosqlite
+    #   eth-typing
     #   fastapi
     #   psycopg-pool
     #   pydantic
     #   pydantic-core
+    #   web3
 urllib3==2.5.0
-    # via requests
+    # via
+    #   requests
+    #   types-requests
 uvicorn==0.35.0
     # via -r requirements.in
 uvloop==0.21.0
     # via uvicorn
 watchfiles==1.1.0
     # via uvicorn
+web3==7.12.0
+    # via -r requirements.in
 websockets==15.0.1
-    # via uvicorn
+    # via
+    #   uvicorn
+    #   web3
+yarl==1.20.1
+    # via aiohttp

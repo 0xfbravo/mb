@@ -1,16 +1,17 @@
 import asyncio
-import uuid
 from typing import Any
 
 from app.data.database import WalletRepository
+from app.data.evm.main import EVMService
 from app.domain.wallet.models import Pagination, Wallet, WalletsPagination
 
 
 class WalletUseCases:
     """Use cases for wallet operations."""
 
-    def __init__(self, wallet_repo: WalletRepository, logger: Any):
+    def __init__(self, wallet_repo: WalletRepository, evm_service: EVMService, logger: Any):
         self.wallet_repo = wallet_repo
+        self.evm_service = evm_service
         self.logger = logger
 
     async def create(self, number_of_wallets: int) -> list[Wallet]:
@@ -20,25 +21,23 @@ class WalletUseCases:
 
         # Create wallet creation tasks
         async def create_single_wallet():
-            # TODO: Generate a real address and private key
-            address = f"0x{uuid.uuid4().hex[:40]}"
-            private_key = f"private_key_for_{address}"
+            wallet = self.evm_service.create_wallet()
             try:
                 db_wallet = await self.wallet_repo.create(
-                    address=address,
-                    private_key=private_key,
+                    address=wallet.address,
+                    private_key=wallet.key.hex(),
                 )
                 wallet = Wallet(
                     address=db_wallet.address,
                     private_key=db_wallet.private_key,
                 )
-                self.logger.info(f"Successfully created wallet: {address}")
+                self.logger.info(f"Successfully created wallet: {wallet.address}")
                 return wallet
             except RuntimeError as e:
-                self.logger.error(f"Database error creating wallet {address}: {e}")
+                self.logger.error(f"Database error creating wallet {wallet.address}: {e}")
                 raise
             except Exception as e:
-                self.logger.error(f"Unexpected error creating wallet {address}: {e}")
+                self.logger.error(f"Unexpected error creating wallet {wallet.address}: {e}")
                 raise
 
         # Create all wallets concurrently using asyncio.gather

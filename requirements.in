@@ -8,3 +8,4 @@ loguru>=0.7.3
 click==8.0.2
 tortoise-orm[psycopg]>=0.25.1
 asyncpg>=0.30.0
+web3>=7.12.0

@@ -7,6 +7,7 @@ from loguru import logger
 
 from app.data.database import (DatabaseManager, TransactionRepository,
                                WalletRepository)
+from app.data.evm.main import EVMService
 from app.domain.transaction.use_cases import TransactionUseCases
 from app.domain.wallet.use_cases import WalletUseCases
 
@@ -40,8 +41,9 @@ class DependencyInjection:
             logger.info("Initializing dependency injection")
             self.logger = logger
             self.db_manager = DatabaseManager(self.logger)
+            self.evm_service = EVMService(os.getenv("RPC_URL", ""), self.logger)
             self.wallet_repo = WalletRepository(self.db_manager, self.logger)
-            self.wallet_uc = WalletUseCases(self.wallet_repo, self.logger)
+            self.wallet_uc = WalletUseCases(self.wallet_repo, self.evm_service, self.logger)
             self.tx_repo = TransactionRepository(self.db_manager, self.logger)
             self.tx_uc = TransactionUseCases(self.tx_repo, self.logger)
             logger.info("Dependency injection initialized successfully")
