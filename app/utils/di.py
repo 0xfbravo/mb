@@ -69,9 +69,7 @@ class DependencyInjection:
         if max_size is None:
             max_size = int(os.getenv("DB_POOL_MAX_SIZE", "10").split("#")[0].strip())
         if max_idle is None:
-            max_idle = int(
-                os.getenv("DB_POOL_MAX_IDLE", "300").split("#")[0].strip()
-            )
+            max_idle = int(os.getenv("DB_POOL_MAX_IDLE", "300").split("#")[0].strip())
         if timeout is None:
             timeout = int(os.getenv("DB_POOL_TIMEOUT", "30").split("#")[0].strip())
 

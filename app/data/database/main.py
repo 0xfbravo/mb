@@ -131,6 +131,7 @@ class DatabaseManager:
 
     async def is_healthy(self) -> bool:
         from app.data.database.wallets import Wallet
+
         try:
             await Wallet.all().limit(1)
             return True

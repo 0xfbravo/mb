@@ -6,11 +6,12 @@ These tests verify that the main application works correctly with all components
 
 import asyncio
 import os
+
 import pytest
 import pytest_asyncio
 from dotenv import load_dotenv
 from fastapi import FastAPI
-from httpx import AsyncClient, ASGITransport, Response
+from httpx import ASGITransport, AsyncClient, Response
 
 from app import DependencyInjection, router, setup_loguru
 
@@ -99,7 +100,7 @@ class TestMainAppIntegration:
         # Test that non-API routes return 404
         assert (await client.get("/health/")).status_code == 404
         assert (await client.get("/")).status_code == 404
-        
+
         # Test that API routes are accessible
         response = await client.get("/api/health/")
         assert response.status_code in [200, 500]
