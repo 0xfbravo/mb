@@ -59,3 +59,25 @@ class Transaction(BaseModel):
             "gas_price": self.gas_price,
             "gas_limit": self.gas_limit,
         }
+
+class Pagination(BaseModel):
+    """Pagination model"""
+
+    total: int
+    page: int
+    next_page: Optional[int] = None
+    prev_page: Optional[int] = None
+
+    def to_presentation(self) -> dict:
+        """Convert the pagination model to a presentation layer model"""
+        return {
+            "total": self.total,
+            "page": self.page,
+            "next_page": self.next_page,
+            "prev_page": self.prev_page
+        }
+class TransactionsPagination(BaseModel):
+    """Transactions pagination model"""
+
+    pagination: Pagination
+    transactions: list[Transaction]

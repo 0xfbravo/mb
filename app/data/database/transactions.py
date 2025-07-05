@@ -59,9 +59,9 @@ class TransactionRepository:
         """Get transaction by transaction hash."""
         return await Transaction.get(tx_hash=tx_hash)
 
-    async def get_by_wallet(self, wallet_address: str) -> list[Transaction]:
+    async def get_by_wallet(self, wallet_address: str, offset: int = 0, limit: int = 100) -> list[Transaction]:
         """Get all transactions for a wallet."""
-        return await Transaction.filter(wallet_address=wallet_address)
+        return await Transaction.filter(wallet_address=wallet_address).offset(offset).limit(limit)
 
     async def update_status(
         self, transaction_id: str, status: TransactionStatus
@@ -71,3 +71,7 @@ class TransactionRepository:
         transaction.status = status
         await transaction.save()
         return transaction
+
+    async def get_all(self, offset: int = 0, limit: int = 100) -> list[Transaction]:
+        """Get all transactions."""
+        return await Transaction.all().offset(offset).limit(limit)
