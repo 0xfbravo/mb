@@ -1,13 +1,13 @@
 from typing import Any
 
-from web3.types import TxParams, TxReceipt
-from hexbytes import HexBytes
 from eth_account.datastructures import SignedTransaction
 from eth_account.signers.local import LocalAccount
-
 from eth_typing import Address
 from eth_typing.evm import Hash32
+from hexbytes import HexBytes
 from web3 import Web3
+from web3.types import TxParams, TxReceipt
+
 
 class EVMService:
     """EVM service for interacting with the EVM network."""
@@ -28,7 +28,7 @@ class EVMService:
             The new wallet created.
         """
         account = self.w3.eth.account.create()
-        
+
         if not account.address or not account.key:
             raise RuntimeError("Failed to create wallet")
 
@@ -48,7 +48,7 @@ class EVMService:
         balance_wei = self.w3.eth.get_balance(wallet_address)
         balance_eth = balance_wei / 10**18
         return balance_eth
-    
+
     # Sign transaction
     def sign_transaction(self, tx: TxParams, private_key: str) -> SignedTransaction:
         """

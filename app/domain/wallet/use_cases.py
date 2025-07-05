@@ -9,7 +9,9 @@ from app.domain.wallet.models import Pagination, Wallet, WalletsPagination
 class WalletUseCases:
     """Use cases for wallet operations."""
 
-    def __init__(self, wallet_repo: WalletRepository, evm_service: EVMService, logger: Any):
+    def __init__(
+        self, wallet_repo: WalletRepository, evm_service: EVMService, logger: Any
+    ):
         self.wallet_repo = wallet_repo
         self.evm_service = evm_service
         self.logger = logger
@@ -34,10 +36,14 @@ class WalletUseCases:
                 self.logger.info(f"Successfully created wallet: {wallet.address}")
                 return wallet
             except RuntimeError as e:
-                self.logger.error(f"Database error creating wallet {wallet.address}: {e}")
+                self.logger.error(
+                    f"Database error creating wallet {wallet.address}: {e}"
+                )
                 raise
             except Exception as e:
-                self.logger.error(f"Unexpected error creating wallet {wallet.address}: {e}")
+                self.logger.error(
+                    f"Unexpected error creating wallet {wallet.address}: {e}"
+                )
                 raise
 
         # Create all wallets concurrently using asyncio.gather

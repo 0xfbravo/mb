@@ -43,7 +43,9 @@ class DependencyInjection:
             self.db_manager = DatabaseManager(self.logger)
             self.evm_service = EVMService(os.getenv("RPC_URL", ""), self.logger)
             self.wallet_repo = WalletRepository(self.db_manager, self.logger)
-            self.wallet_uc = WalletUseCases(self.wallet_repo, self.evm_service, self.logger)
+            self.wallet_uc = WalletUseCases(
+                self.wallet_repo, self.evm_service, self.logger
+            )
             self.tx_repo = TransactionRepository(self.db_manager, self.logger)
             self.tx_uc = TransactionUseCases(self.tx_repo, self.logger)
             logger.info("Dependency injection initialized successfully")
