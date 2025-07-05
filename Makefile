@@ -225,8 +225,8 @@ deps/update:
 deps/compile:
 	@echo "${CYAN}📦 Compiling requirements...${NC}"
 	@venv/bin/${PIP} install pip-tools --quiet
-	@venv/bin/${PIP} compile requirements.in --strip-extras
-	@venv/bin/${PIP} compile requirements-dev.in --strip-extras
+	@venv/bin/pip-compile requirements.in --strip-extras
+	@venv/bin/pip-compile requirements-dev.in --strip-extras
 
 # Security checks
 .PHONY: security

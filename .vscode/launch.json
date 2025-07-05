@@ -19,6 +19,42 @@
         },
         "justMyCode": false,
         "stopOnEntry": false
+      },
+      {
+        "name": "🧪 Debug Tests",
+        "type": "debugpy",
+        "request": "launch",
+        "module": "pytest",
+        "args": [
+          "test/",
+          "-v",
+          "--tb=short"
+        ],
+        "console": "integratedTerminal",
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}"
+        },
+        "justMyCode": false,
+        "stopOnEntry": false
+      },
+      {
+        "name": "🧪 Debug Current Test File",
+        "type": "debugpy",
+        "request": "launch",
+        "module": "pytest",
+        "args": [
+          "${file}",
+          "-v",
+          "--tb=short"
+        ],
+        "console": "integratedTerminal",
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}"
+        },
+        "justMyCode": false,
+        "stopOnEntry": false
       }
     ]
 }  

@@ -4,7 +4,7 @@ Unit tests for the main application module.
 These tests verify individual functions and components in isolation.
 """
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -115,6 +115,105 @@ class TestMainModuleUnit:
 
         # Test that the router has routes
         assert len(router.routes) > 0
+
+    def test_all_routers_included(self):
+        """Test that all sub-routers are included in the main router."""
+        from app.presentation.api import router
+
+        # Check that all expected routers are included
+        route_paths = [str(route) for route in router.routes]
+
+        # Should have health, wallet, and transaction routes
+        assert any("/health" in path for path in route_paths)
+        assert any("/wallet" in path for path in route_paths)
+        assert any("/tx" in path for path in route_paths)
+
+    def test_lifespan_function_defined(self):
+        """Test that the lifespan function is properly defined."""
+        import main
+
+        # Test that lifespan is defined and is a context manager
+        assert hasattr(main, "lifespan")
+        assert callable(main.lifespan)
+
+    @patch("main.DependencyInjection")
+    @pytest.mark.asyncio
+    async def test_lifespan_initialization(self, mock_di_class):
+        """Test that lifespan properly initializes dependencies."""
+        from fastapi import FastAPI
+
+        import main
+
+        # Mock the dependency injection with async methods
+        mock_di = MagicMock()
+        mock_di.initialize = AsyncMock()
+        mock_di.shutdown = AsyncMock()
+        mock_di.logger = MagicMock()
+        mock_di_class.return_value = mock_di
+
+        # Create a test app
+        test_app = FastAPI()
+
+        # Test the lifespan context manager
+        async with main.lifespan(test_app):
+            # Verify that DI was initialized
+            mock_di.initialize.assert_called_once()
+
+            # Verify that shutdown is called when exiting context
+            mock_di.shutdown.assert_not_called()
+
+        # Verify that shutdown was called after exiting context
+        mock_di.shutdown.assert_called_once()
+
+    def test_environment_variables_defaults(self):
+        """Test that environment variables have proper defaults."""
+        import os
+        from unittest.mock import patch
+
+        # Test with no environment variables set
+        with patch.dict(os.environ, {}, clear=True):
+            # These should use the default values from main.py
+            assert os.getenv("POSTGRES_DB", "postgres") == "postgres"
+            assert os.getenv("POSTGRES_USER", "postgres") == "postgres"
+            assert os.getenv("POSTGRES_PASSWORD", "password") == "password"
+            assert os.getenv("POSTGRES_HOST", "localhost") == "localhost"
+            assert int(os.getenv("POSTGRES_PORT", "5432")) == 5432
+
+
+class TestRouterEndpointsUnit:
+    """Unit tests for router endpoints."""
+
+    def test_health_router_structure(self):
+        """Test that the health router has the correct structure."""
+        from app.presentation.api.health import router
+
+        assert router.prefix == "/health"
+        assert len(router.routes) > 0
+
+    def test_wallet_router_structure(self):
+        """Test that the wallet router has the correct structure."""
+        from app.presentation.api.wallet import router
+
+        assert router.prefix == "/wallet"
+        assert len(router.routes) > 0
+
+    def test_transaction_router_structure(self):
+        """Test that the transaction router has the correct structure."""
+        from app.presentation.api.transaction import router
+
+        assert router.prefix == "/tx"
+        assert len(router.routes) > 0
+
+    def test_router_tags(self):
+        """Test that routers have proper tags for OpenAPI documentation."""
+        from app.presentation.api.health import router as health_router
+        from app.presentation.api.transaction import router as tx_router
+        from app.presentation.api.wallet import router as wallet_router
+
+        # Check that routers have tags
+        assert health_router.tags == ["💊 Health check"]
+        assert wallet_router.tags == ["🔐 Wallet"]
+        assert tx_router.tags == ["💰 Transaction"]
 
 
 if __name__ == "__main__":

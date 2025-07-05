@@ -1,34 +1,26 @@
+from typing import Optional
+
 from pydantic import BaseModel
+
+from app.data.database import Wallet as DBWallet
 
 
 class Wallet(BaseModel):
     """Wallet model"""
 
-    address: str
-    name: str
-    balance: float = 0.0
+    address: Optional[str] = None
+    private_key: Optional[str] = None
 
-    def to_data_layer(self) -> dict:
-        """Convert the wallet model to a data layer model"""
-        return {
-            "address": self.address,
-            "name": self.name,
-            "balance": self.balance,
-        }
+    def from_data(self, db_wallet: DBWallet) -> "Wallet":
+        """Convert a data layer model to a domain layer model"""
+        return Wallet(
+            address=db_wallet.address,
+            private_key=db_wallet.private_key,
+        )
 
-    def to_presentation_layer(self) -> dict:
+    def to_presentation(self) -> dict:
         """Convert the wallet model to a presentation layer model"""
         return {
             "address": self.address,
-            "name": self.name,
-            "balance": self.balance,
+            "private_key": self.private_key,
         }
-
-
-def wallet_to_domain(wallet: dict) -> Wallet:
-    """Convert a wallet model to a domain layer model"""
-    return Wallet(
-        address=wallet["address"],
-        name=wallet["name"],
-        balance=wallet["balance"],
-    )

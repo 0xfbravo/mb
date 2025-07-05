@@ -1,38 +1,56 @@
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
+
+from app.data.database import Transaction as DBTransaction
 
 
-class CreateTransaction(BaseModel):
+class CreateTx(BaseModel):
     """Create transaction model for blockchain transactions"""
 
-    from_address: str
-    to_address: str
-    amount: float
+    from_address: str = Field(
+        ..., min_length=1, description="The address of the sender"
+    )
+    to_address: str = Field(
+        ..., min_length=1, description="The address of the receiver"
+    )
+    amount: float = Field(..., gt=0, description="The amount of the transaction")
+
+    @field_validator("from_address")
+    @classmethod
+    def validate_from_address(cls, v):
+        if not v or v.strip() == "":
+            raise ValueError("from_address cannot be empty")
+        return v
+
+    @field_validator("to_address")
+    @classmethod
+    def validate_to_address(cls, v):
+        if not v or v.strip() == "":
+            raise ValueError("to_address cannot be empty")
+        return v
 
 
 class Transaction(BaseModel):
     """Transaction model for blockchain transactions"""
 
-    from_address: str
-    to_address: str
-    amount: float
-    gas_price: Optional[float] = None
+    from_address: Optional[str] = None
+    to_address: Optional[str] = None
+    amount: Optional[float] = None
+    gas_price: Optional[int] = None
     gas_limit: Optional[int] = None
-    data: Optional[str] = None
 
-    def to_data_layer(self) -> dict:
-        """Convert the transaction model to a data layer model"""
-        return {
-            "from_address": self.from_address,
-            "to_address": self.to_address,
-            "amount": self.amount,
-            "gas_price": self.gas_price,
-            "gas_limit": self.gas_limit,
-            "data": self.data,
-        }
+    def from_data(self, db_transaction: DBTransaction) -> "Transaction":
+        """Convert a data layer model to a domain layer model"""
+        return Transaction(
+            from_address=db_transaction.wallet_address,
+            to_address=db_transaction.wallet_address,
+            amount=db_transaction.amount,
+            gas_price=db_transaction.gas_price,
+            gas_limit=db_transaction.gas_limit,
+        )
 
-    def to_presentation_layer(self):
+    def to_presentation(self):
         """Convert the transaction model to a presentation layer model"""
         return {
             "from_address": self.from_address,
@@ -40,17 +58,4 @@ class Transaction(BaseModel):
             "amount": self.amount,
             "gas_price": self.gas_price,
             "gas_limit": self.gas_limit,
-            "data": self.data,
         }
-
-
-def tx_to_domain(tx: dict) -> Transaction:
-    """Convert a transaction model to a domain layer model"""
-    return Transaction(
-        from_address=tx["from_address"],
-        to_address=tx["to_address"],
-        amount=tx["amount"],
-        gas_price=tx["gas_price"],
-        gas_limit=tx["gas_limit"],
-        data=tx["data"],
-    )

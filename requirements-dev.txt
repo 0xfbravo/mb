@@ -4,6 +4,8 @@
 #
 #    pip-compile --strip-extras requirements-dev.in
 #
+aiosqlite==0.21.0
+    # via tortoise-orm
 annotated-types==0.7.0
     # via pydantic
 anyio==4.9.0
@@ -11,6 +13,8 @@ anyio==4.9.0
     #   httpx
     #   starlette
     #   watchfiles
+asyncpg==0.30.0
+    # via -r requirements.in
 authlib==1.6.0
     # via safety
 black==25.1.0
@@ -22,8 +26,6 @@ certifi==2025.6.15
     #   requests
 cffi==1.17.1
     # via cryptography
-cfgv==3.4.0
-    # via pre-commit
 charset-normalizer==3.4.2
     # via requests
 click==8.0.2
@@ -38,8 +40,6 @@ coverage==7.9.2
     # via pytest-cov
 cryptography==45.0.5
     # via authlib
-distlib==0.3.9
-    # via virtualenv
 dparse==0.6.4
     # via
     #   safety
@@ -47,9 +47,7 @@ dparse==0.6.4
 fastapi==0.115.14
     # via -r requirements.in
 filelock==3.16.1
-    # via
-    #   safety
-    #   virtualenv
+    # via safety
 flake8==7.3.0
     # via -r requirements-dev.in
 h11==0.16.0
@@ -64,8 +62,6 @@ httpx==0.28.1
     # via
     #   -r requirements-dev.in
     #   safety
-identify==2.6.12
-    # via pre-commit
 idna==3.10
     # via
     #   anyio
@@ -73,12 +69,16 @@ idna==3.10
     #   requests
 iniconfig==2.1.0
     # via pytest
+iso8601==2.1.0
+    # via tortoise-orm
 isort==6.0.1
     # via -r requirements-dev.in
 jinja2==3.1.6
     # via safety
 joblib==1.5.1
     # via nltk
+lefthook==1.11.16
+    # via -r requirements-dev.in
 loguru==0.7.3
     # via -r requirements.in
 markdown-it-py==3.0.0
@@ -99,8 +99,6 @@ mypy-extensions==1.1.0
     #   mypy
 nltk==3.9.1
     # via safety
-nodeenv==1.9.1
-    # via pre-commit
 packaging==25.0
     # via
     #   black
@@ -113,17 +111,19 @@ pathspec==0.12.1
     #   black
     #   mypy
 platformdirs==4.3.8
-    # via
-    #   black
-    #   virtualenv
+    # via black
 pluggy==1.6.0
     # via
     #   pytest
     #   pytest-cov
-pre-commit==4.2.0
-    # via -r requirements-dev.in
 psutil==6.1.1
     # via safety
+psycopg==3.2.9
+    # via tortoise-orm
+psycopg-binary==3.2.9
+    # via psycopg
+psycopg-pool==3.2.6
+    # via psycopg
 pycodestyle==2.14.0
     # via flake8
 pycparser==2.22
@@ -142,6 +142,8 @@ pygments==2.19.2
     # via
     #   pytest
     #   rich
+pypika-tortoise==0.6.1
+    # via tortoise-orm
 pytest==8.4.1
     # via
     #   -r requirements-dev.in
@@ -157,10 +159,10 @@ python-dotenv==1.1.1
     #   uvicorn
 python-multipart==0.0.20
     # via -r requirements.in
+pytz==2025.2
+    # via tortoise-orm
 pyyaml==6.0.2
-    # via
-    #   pre-commit
-    #   uvicorn
+    # via uvicorn
 regex==2024.11.6
     # via nltk
 requests==2.32.4
@@ -189,15 +191,20 @@ tenacity==9.1.2
     # via safety
 tomlkit==0.13.3
     # via safety
+tortoise-orm==0.25.1
+    # via -r requirements.in
 tqdm==4.67.1
     # via nltk
 typer==0.16.0
     # via safety
 typing-extensions==4.14.1
     # via
+    #   aiosqlite
     #   anyio
     #   fastapi
     #   mypy
+    #   psycopg
+    #   psycopg-pool
     #   pydantic
     #   pydantic-core
     #   safety
@@ -209,8 +216,6 @@ uvicorn==0.35.0
     # via -r requirements.in
 uvloop==0.21.0
     # via uvicorn
-virtualenv==20.31.2
-    # via pre-commit
 watchdog==6.0.0
     # via -r requirements-dev.in
 watchfiles==1.1.0

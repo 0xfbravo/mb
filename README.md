@@ -22,8 +22,11 @@ This document will help you understand the project structure and get started qui
 # First time setup
 make setup
 
+# Copy .env.example to .env and edit it with your configuration
+cp .env.example .env
+
 # Start the application environment with Docker Compose
-make up/build
+make up/build/dev
 ```
 
 Open a new browser tab and navigate to http://localhost:8000/docs or http://localhost:8000/redoc to see the API documentation.
@@ -117,6 +120,56 @@ The project follows Clean Architecture principles with clear separation of conce
    - Defines data models and entities
    - Contains domain-specific logic
    - Independent of infrastructure concerns
+
+## 🗄️ Database Configuration
+
+The application uses PostgreSQL with connection pooling for optimal performance and resource management.
+
+### Connection Pool Configuration
+
+The database connection pool can be configured using environment variables:
+
+```bash
+# Database connection settings
+POSTGRES_DB=your_database_name
+POSTGRES_USER=your_username
+POSTGRES_PASSWORD=your_password
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+
+# Connection pool settings (optional)
+DB_POOL_MIN_SIZE=1          # Minimum number of connections in the pool
+DB_POOL_MAX_SIZE=10         # Maximum number of connections in the pool
+DB_POOL_MAX_IDLE=300.0      # Maximum time (seconds) a connection can be idle
+DB_POOL_TIMEOUT=30.0        # Timeout (seconds) for getting a connection from the pool
+```
+
+### Pool Statistics
+
+You can monitor the connection pool performance using the `get_pool_stats()` method:
+
+```python
+from app.data.database import DatabaseManager
+
+# Get pool statistics
+stats = await db_manager.get_pool_stats()
+print(f"Pool size: {stats['pool_size']}")
+print(f"Checked out connections: {stats['checked_out']}")
+print(f"Available connections: {stats['checked_in']}")
+```
+
+### Health Checks
+
+The database manager includes a health check method that verifies the connection pool is working correctly:
+
+```python
+# Check if the database connection is healthy
+is_healthy = await db_manager.is_healthy()
+if is_healthy:
+    print("Database connection pool is healthy")
+else:
+    print("Database connection pool has issues")
+```
 
 ## 🧪 Testing
 
