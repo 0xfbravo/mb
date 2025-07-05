@@ -33,16 +33,23 @@ async def get_wallets(
     request: Request,
     di: Annotated[DependencyInjection, Depends(get_dependency_injection)],
     page: Annotated[int, Query(ge=1, description="Page number")] = 1,
-    limit: Annotated[int, Query(ge=1, le=1000, description="Number of items to return")] = 100,
+    limit: Annotated[int, Query(ge=1, le=1000, description="Number of items to return in a page")] = 10,
 ) -> WalletsPagination:
     """
     Get all wallets with pagination.
     
-    - **offset**: Number of items to skip (for pagination)
+    - **page**: Page number (for pagination)
     - **limit**: Number of items to return (max 1000)
     """
     di.ensure_database_initialized()
     di.logger.info(f"Getting wallets with pagination: page={page}, limit={limit}")
+
+    if page < 1:
+        raise HTTPException(status_code=400, detail="Page number must be greater than 0")
+
+    if limit < 1 or limit > 1000:
+        raise HTTPException(status_code=400, detail="Limit must be between 1 and 1000")
+
     try:
         return await di.wallet_uc.get_all(page=page, limit=limit)
     except Exception as e:
