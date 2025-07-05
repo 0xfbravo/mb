@@ -21,7 +21,6 @@ class Wallet(Model):
     id = fields.UUIDField(primary_key=True, default=uuid.uuid4)
     address = fields.CharField(max_length=255, unique=True)
     private_key = fields.CharField(max_length=255)
-    balance = fields.FloatField(default=0.0)
     status = fields.CharEnumField(enum_type=WalletStatus)
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
@@ -38,11 +37,12 @@ class WalletRepository:
     async def create(self, address: str, private_key: str) -> Wallet:
         """Create a new wallet."""
         try:
-            return await Wallet.create(
+            new_wallet = await Wallet.create(
                 address=address,
                 private_key=private_key,
                 status=WalletStatus.ACTIVE,
             )
+            return await self.get_by_id(str(new_wallet.id))
         except (OperationalError, ConnectionDoesNotExistError) as e:
             self.logger.error(f"Database connection error in create: {e}")
             raise RuntimeError("Database connection error")
@@ -89,7 +89,9 @@ class WalletRepository:
     async def get_all(self, offset: int = 0, limit: int = 100) -> list[Wallet]:
         """Get all wallets with pagination."""
         try:
-            return await Wallet.all().offset(offset).limit(limit)
+            return (
+                await Wallet.all().order_by("-created_at").offset(offset).limit(limit)
+            )
         except (OperationalError, ConnectionDoesNotExistError) as e:
             self.logger.error(f"Database connection error in get_all: {e}")
             raise RuntimeError("Database connection error")

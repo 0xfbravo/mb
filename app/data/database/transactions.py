@@ -118,7 +118,12 @@ class TransactionRepository:
     async def get_all(self, offset: int = 0, limit: int = 100) -> list[Transaction]:
         """Get all transactions."""
         try:
-            return await Transaction.all().offset(offset).limit(limit)
+            return (
+                await Transaction.all()
+                .order_by("-created_at")
+                .offset(offset)
+                .limit(limit)
+            )
         except (OperationalError, ConnectionDoesNotExistError) as e:
             self.logger.error(f"Database connection error in get_all: {e}")
             raise RuntimeError("Database connection error")

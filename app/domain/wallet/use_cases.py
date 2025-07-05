@@ -29,12 +29,8 @@ class WalletUseCases:
                     address=wallet.address,
                     private_key=wallet.key.hex(),
                 )
-                wallet = Wallet(
-                    address=db_wallet.address,
-                    private_key=db_wallet.private_key,
-                )
                 self.logger.info(f"Successfully created wallet: {wallet.address}")
-                return wallet
+                return Wallet.from_data(db_wallet=db_wallet)
             except RuntimeError as e:
                 self.logger.error(
                     f"Database error creating wallet {wallet.address}: {e}"
@@ -68,10 +64,7 @@ class WalletUseCases:
                 self.wallet_repo.get_count(),
             )
 
-            wallets = [
-                Wallet(address=wallet.address, private_key=wallet.private_key)
-                for wallet in db_wallets
-            ]
+            wallets = [Wallet.from_data(wallet) for wallet in db_wallets]
 
             # Calculate pagination metadata
             total_pages = (total_count + limit - 1) // limit
@@ -104,10 +97,7 @@ class WalletUseCases:
         try:
             db_wallet = await self.wallet_repo.get_by_address(address)
             self.logger.info(f"Successfully retrieved wallet: {address}")
-            return Wallet(
-                address=db_wallet.address,
-                private_key=db_wallet.private_key,
-            )
+            return Wallet.from_data(db_wallet)
         except RuntimeError as e:
             self.logger.error(f"Database error getting wallet {address}: {e}")
             raise
@@ -122,7 +112,4 @@ class WalletUseCases:
         db_wallet = await self.wallet_repo.update_balance(address, balance)
         self.logger.info(f"Successfully updated wallet balance: {address}")
 
-        return Wallet(
-            address=db_wallet.address,
-            private_key=db_wallet.private_key,
-        )
+        return Wallet.from_data(db_wallet)
