@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 
-from app import DependencyInjection, router, setup_loguru
+from app import DependencyInjection, RequestLoggerMiddleware, router, setup_loguru
 
 """
 Main entry point for the application.
@@ -14,9 +14,8 @@ This file is responsible for just initializing it and including the routes.
 All the application logic is housed in app/*
 """
 
-load_dotenv()
 setup_loguru()
-
+load_dotenv()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -90,3 +89,4 @@ async def root():
 
 
 app.include_router(router)
+app.add_middleware(RequestLoggerMiddleware)

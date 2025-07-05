@@ -20,5 +20,10 @@ class InterceptHandler(logging.Handler):
 
 def setup_loguru():
     logging.basicConfig(handlers=[InterceptHandler()], level=logging.INFO)
+    for name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
+        logging.getLogger(name).handlers = [InterceptHandler()]
+        logging.getLogger(name).propagate = False
+
     logger.remove()
     logger.add(sys.stdout, level="INFO", backtrace=True, diagnose=True)
+
