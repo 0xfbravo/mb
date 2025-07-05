@@ -1,8 +1,11 @@
+from datetime import datetime
 from typing import Optional
+from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
 
 from app.data.database import Transaction as DBTransaction
+from app.data.database import TransactionStatus as DBTransactionStatus
 
 
 class CreateTx(BaseModel):
@@ -34,30 +37,43 @@ class CreateTx(BaseModel):
 class Transaction(BaseModel):
     """Transaction model for blockchain transactions"""
 
+    id: Optional[UUID] = None
     from_address: Optional[str] = None
     to_address: Optional[str] = None
     amount: Optional[float] = None
     gas_price: Optional[int] = None
     gas_limit: Optional[int] = None
+    status: Optional[DBTransactionStatus] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
-    def from_data(self, db_transaction: DBTransaction) -> "Transaction":
+    @classmethod
+    def from_data(cls, db_transaction: DBTransaction) -> "Transaction":
         """Convert a data layer model to a domain layer model"""
         return Transaction(
+            id=db_transaction.id,
             from_address=db_transaction.wallet_address,
             to_address=db_transaction.wallet_address,
             amount=db_transaction.amount,
             gas_price=db_transaction.gas_price,
             gas_limit=db_transaction.gas_limit,
+            status=DBTransactionStatus(db_transaction.status.value) if db_transaction.status else None,
+            created_at=db_transaction.created_at,
+            updated_at=db_transaction.updated_at,
         )
 
     def to_presentation(self):
         """Convert the transaction model to a presentation layer model"""
         return {
+            "id": self.id,
             "from_address": self.from_address,
             "to_address": self.to_address,
             "amount": self.amount,
             "gas_price": self.gas_price,
             "gas_limit": self.gas_limit,
+            "status": self.status,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
         }
 
 
