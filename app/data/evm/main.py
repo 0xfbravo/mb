@@ -5,18 +5,18 @@ from eth_account.signers.local import LocalAccount
 from eth_typing import Address
 from eth_typing.evm import Hash32
 from hexbytes import HexBytes
-from web3 import Web3
+from web3 import Web3, EthereumTesterProvider
 from web3.types import TxParams, TxReceipt
 
 
 class EVMService:
     """EVM service for interacting with the EVM network."""
 
-    def __init__(self, rpc_url: str, logger: Any):
+    def __init__(self, use_test_provider: bool, rpc_url: str, logger: Any):
         """
         Initialize the EVM service.
         """
-        self.w3 = Web3(Web3.HTTPProvider(rpc_url))
+        self.w3 = Web3(EthereumTesterProvider()) if use_test_provider else Web3(Web3.HTTPProvider(rpc_url))
         self.logger = logger
 
     # Create a new wallet
@@ -90,6 +90,6 @@ class EVMService:
             The transaction receipt.
         """
         receipt = self.w3.eth.get_transaction_receipt(transaction_hash)
-        if not receipt:
+        if receipt is None:
             raise RuntimeError("Transaction receipt not found")
         return receipt
