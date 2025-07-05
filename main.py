@@ -37,8 +37,8 @@ async def lifespan(app: FastAPI):
     try:
         pool_min_size = int(db_pool_min_size) if db_pool_min_size else 1
         pool_max_size = int(db_pool_max_size) if db_pool_max_size else 10
-        pool_max_idle = float(db_pool_max_idle) if db_pool_max_idle else 300.0
-        pool_timeout = float(db_pool_timeout) if db_pool_timeout else 30.0
+        pool_max_idle = int(db_pool_max_idle) if db_pool_max_idle else 300
+        pool_timeout = int(db_pool_timeout) if db_pool_timeout else 30
         await di.initialize(
             db_name,
             db_user,
@@ -53,7 +53,7 @@ async def lifespan(app: FastAPI):
         di.logger.info("Dependency injection initialized successfully.")
     except Exception as e:
         di.logger.error(f"Error during startup: {e}")
-        # Don't raise the exception immediately, let the app start but mark it as unhealthy
+        # Don't raise the exception immediately but mark it as unhealthy
         di.logger.warning("Application starting with database initialization failure")
 
     yield

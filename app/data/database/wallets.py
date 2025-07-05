@@ -2,7 +2,9 @@ import uuid
 from enum import Enum
 from typing import Any
 
+from asyncpg.exceptions import ConnectionDoesNotExistError
 from tortoise import fields
+from tortoise.exceptions import OperationalError
 from tortoise.models import Model
 
 from app.data.database.main import DatabaseManager
@@ -35,31 +37,73 @@ class WalletRepository:
 
     async def create(self, address: str, private_key: str) -> Wallet:
         """Create a new wallet."""
-        return await Wallet.create(
-            address=address,
-            private_key=private_key,
-            status=WalletStatus.ACTIVE,
-        )
+        try:
+            return await Wallet.create(
+                address=address,
+                private_key=private_key,
+                status=WalletStatus.ACTIVE,
+            )
+        except (OperationalError, ConnectionDoesNotExistError) as e:
+            self.logger.error(f"Database connection error in create: {e}")
+            raise RuntimeError("Database connection error")
+        except Exception as e:
+            self.logger.error(f"Error creating wallet: {e}")
+            raise
 
     async def get_by_address(self, address: str) -> Wallet:
         """Get wallet by address."""
-        return await Wallet.get(address=address)
+        try:
+            return await Wallet.get(address=address)
+        except (OperationalError, ConnectionDoesNotExistError) as e:
+            self.logger.error(f"Database connection error in get_by_address: {e}")
+            raise RuntimeError("Database connection error")
+        except Exception as e:
+            self.logger.error(f"Error getting wallet by address: {e}")
+            raise
 
     async def get_by_id(self, wallet_id: str) -> Wallet:
         """Get wallet by ID."""
-        return await Wallet.get(id=wallet_id)
+        try:
+            return await Wallet.get(id=wallet_id)
+        except (OperationalError, ConnectionDoesNotExistError) as e:
+            self.logger.error(f"Database connection error in get_by_id: {e}")
+            raise RuntimeError("Database connection error")
+        except Exception as e:
+            self.logger.error(f"Error getting wallet by ID: {e}")
+            raise
 
     async def update_balance(self, address: str, balance: float) -> Wallet:
         """Update wallet balance."""
-        wallet = await Wallet.get(address=address)
-        wallet.balance = balance
-        await wallet.save()
-        return wallet
+        try:
+            wallet = await Wallet.get(address=address)
+            wallet.balance = balance
+            await wallet.save()
+            return wallet
+        except (OperationalError, ConnectionDoesNotExistError) as e:
+            self.logger.error(f"Database connection error in update_balance: {e}")
+            raise RuntimeError("Database connection error")
+        except Exception as e:
+            self.logger.error(f"Error updating wallet balance: {e}")
+            raise
 
     async def get_all(self, offset: int = 0, limit: int = 100) -> list[Wallet]:
         """Get all wallets with pagination."""
-        return await Wallet.all().offset(offset).limit(limit)
+        try:
+            return await Wallet.all().offset(offset).limit(limit)
+        except (OperationalError, ConnectionDoesNotExistError) as e:
+            self.logger.error(f"Database connection error in get_all: {e}")
+            raise RuntimeError("Database connection error")
+        except Exception as e:
+            self.logger.error(f"Error getting all wallets: {e}")
+            raise
 
     async def get_count(self) -> int:
         """Get total count of wallets."""
-        return await Wallet.all().count()
+        try:
+            return await Wallet.all().count()
+        except (OperationalError, ConnectionDoesNotExistError) as e:
+            self.logger.error(f"Database connection error in get_count: {e}")
+            raise RuntimeError("Database connection error")
+        except Exception as e:
+            self.logger.error(f"Error getting wallet count: {e}")
+            raise

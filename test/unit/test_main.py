@@ -138,20 +138,21 @@ class TestMainModuleUnit:
 
     def test_lifespan_initialization_structure(self):
         """Test that lifespan function has the correct structure and can be called."""
-        import main
         from fastapi import FastAPI
+
+        import main
 
         # Test that lifespan is a context manager
         test_app = FastAPI()
-        
+
         # Test that lifespan can be imported and is callable
-        assert hasattr(main, 'lifespan')
+        assert hasattr(main, "lifespan")
         assert callable(main.lifespan)
-        
+
         # Test that lifespan returns a context manager
         context_manager = main.lifespan(test_app)
-        assert hasattr(context_manager, '__aenter__')
-        assert hasattr(context_manager, '__aexit__')
+        assert hasattr(context_manager, "__aenter__")
+        assert hasattr(context_manager, "__aexit__")
 
     def test_environment_variables_defaults(self):
         """Test that environment variables have proper defaults."""

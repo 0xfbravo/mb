@@ -123,11 +123,11 @@ The project follows Clean Architecture principles with clear separation of conce
 
 ## 🗄️ Database Configuration
 
-The application uses PostgreSQL with connection pooling for optimal performance and resource management.
+The application uses PostgreSQL with Tortoise ORM for database operations and connection pooling.
 
 ### Connection Pool Configuration
 
-The database connection pool can be configured using environment variables:
+The database connection pool is managed by Tortoise ORM and can be configured using environment variables:
 
 ```bash
 # Database connection settings
@@ -140,8 +140,8 @@ POSTGRES_PORT=5432
 # Connection pool settings (optional)
 DB_POOL_MIN_SIZE=1          # Minimum number of connections in the pool
 DB_POOL_MAX_SIZE=10         # Maximum number of connections in the pool
-DB_POOL_MAX_IDLE=300.0      # Maximum time (seconds) a connection can be idle
-DB_POOL_TIMEOUT=30.0        # Timeout (seconds) for getting a connection from the pool
+DB_POOL_MAX_IDLE=300        # Maximum time (seconds) a connection can be idle
+DB_POOL_TIMEOUT=30          # Timeout (seconds) for getting a connection from the pool
 ```
 
 ### Pool Statistics
@@ -156,19 +156,6 @@ stats = await db_manager.get_pool_stats()
 print(f"Pool size: {stats['pool_size']}")
 print(f"Checked out connections: {stats['checked_out']}")
 print(f"Available connections: {stats['checked_in']}")
-```
-
-### Health Checks
-
-The database manager includes a health check method that verifies the connection pool is working correctly:
-
-```python
-# Check if the database connection is healthy
-is_healthy = await db_manager.is_healthy()
-if is_healthy:
-    print("Database connection pool is healthy")
-else:
-    print("Database connection pool has issues")
 ```
 
 ## 🧪 Testing

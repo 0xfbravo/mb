@@ -56,7 +56,6 @@ def mock_db_manager():
     db_manager = MagicMock()
     db_manager.initialize = AsyncMock()
     db_manager.close = AsyncMock()
-    db_manager.is_healthy = AsyncMock(return_value=True)
     db_manager.get_pool_stats = AsyncMock(
         return_value={
             "pool_size": 5,

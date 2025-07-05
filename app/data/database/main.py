@@ -1,16 +1,16 @@
-from typing import Any, Optional
+import asyncio
+from typing import Any
 
-from psycopg_pool import AsyncConnectionPool
-from tortoise import Tortoise
+from tortoise import Tortoise, connections
 
 
 class DatabaseManager:
-    """Manager responsible for managing the database connection pool."""
+    """Manager responsible for managing the database connection using Tortoise ORM."""
 
     def __init__(self, logger: Any):
         """Initialize the database manager."""
         self.logger = logger
-        self._pool: Optional[AsyncConnectionPool] = None
+        self._tortoise_initialized = False
 
     async def initialize(
         self,
@@ -21,116 +21,123 @@ class DatabaseManager:
         db_port: int,
         min_size: int = 1,
         max_size: int = 10,
-        max_idle: float = 300.0,
-        timeout: float = 30.0,
+        max_idle: int = 300,
+        timeout: int = 30,
     ):
-        """Initialize the database connection with connection pooling."""
-        self.logger.info(f"Initializing database connection pool to {db_name}")
+        """Initialize the database connection with Tortoise ORM connection pooling."""
+        self.logger.info(f"Initializing database connection to {db_name}")
 
         # Close any existing connections first
         await self.close()
 
-        # Build connection URL
-        url = f"postgres://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+        # Build connection URL with connection pool parameters
+        url = f"postgres://{db_user}:{db_password}@{db_host}:{db_port}/"
+        url += f"{db_name}?minsize={min_size}&maxsize={max_size}&"
+        url += f"max_inactive_connection_lifetime={max_idle}&timeout={timeout}"
 
-        # Create connection
-        self._pool = AsyncConnectionPool(
-            conninfo=url,
-            min_size=min_size,
-            max_size=max_size,
-            max_idle=max_idle,
-            timeout=timeout,
-            open=False,  # Don't open automatically to avoid deprecation warning
-        )
+        # Create connection pool with retry logic
+        max_retries = 3
+        retry_delay = 2
 
-        # Open the pool explicitly
-        await self._pool.open()
+        for attempt in range(max_retries):
+            try:
+                # Initialize Tortoise ORM with connection pooling
+                await Tortoise.init(
+                    db_url=url,
+                    modules={
+                        "models": [
+                            "app.data.database.transactions",
+                            "app.data.database.wallets",
+                        ]
+                    },
+                    use_tz=False,
+                    _create_db=False,
+                )
 
-        # Initialize Tortoise ORM with the pool
-        await Tortoise.init(
-            db_url=url,
-            modules={
-                "models": [
-                    "app.data.database.transactions",
-                    "app.data.database.wallets",
-                ]
-            },
-            use_tz=False,
-            _create_db=False,
-        )
+                # Generate schemas
+                await Tortoise.generate_schemas()
+                self._tortoise_initialized = True
 
-        # Generate schemas
-        await Tortoise.generate_schemas()
-        
-        self.logger.info("Tortoise ORM initialized successfully")
+                self.logger.info(
+                    "Tortoise ORM initialized successfully with connection pooling"
+                )
+                return
 
-        self.logger.info("Database connection pool initialized successfully ")
+            except Exception as e:
+                self.logger.error(
+                    f"Database initialization attempt {attempt + 1} failed: {e}"
+                )
+                if attempt < max_retries - 1:
+                    self.logger.info(f"Retrying in {retry_delay} seconds...")
+                    await asyncio.sleep(retry_delay)
+                    retry_delay *= 2  # Exponential backoff
+                else:
+                    self.logger.error("All database initialization attempts failed")
+                    raise
 
     async def close(self):
-        """Close all database connections and the connection pool."""
-        self.logger.info("Closing database connection pool")
+        """Close all database connections."""
+        self.logger.info("Closing database connections")
 
-        # Close Tortoise connections
-        try:
-            # Try to close Tortoise connections - this will fail gracefully if not initialized
-            await Tortoise.close_connections()
-            self.logger.info("Tortoise connections closed successfully")
-        except Exception as e:
-            # This is expected if Tortoise was never initialized or already closed
-            self.logger.debug(f"Tortoise connections already closed or not initialized: {e}")
-
-        # Close the connection pool
-        if self._pool:
+        if self._tortoise_initialized:
             try:
-                await self._pool.close()
-                self._pool = None
-                self.logger.info("Database connection pool closed successfully")
+                await Tortoise.close_connections()
+                self.logger.info("Tortoise connections closed successfully")
+                self._tortoise_initialized = False
             except Exception as e:
-                self.logger.error(f"Error closing connection pool: {e}")
+                # Expected if Tortoise was never initialized or already closed
+                self.logger.debug(
+                    f"Tortoise connections already closed or not initialized: {e}"
+                )
         else:
-            self.logger.info("No connection pool to close")
-
-    async def is_healthy(self) -> bool:
-        """Check if the connection pool is healthy by performing a simple query."""
-        self.logger.info("Checking if database connection pool is healthy")
-
-        if not self._pool:
-            self.logger.error("Connection pool is not initialized")
-            return False
-
-        try:
-            # Test the connection pool with a simple query
-            async with self._pool.connection() as conn:
-                async with conn.cursor() as cur:
-                    await cur.execute("SELECT 1")
-                    result = await cur.fetchone()
-                    if result and result[0] == 1:
-                        self.logger.info("Database connection pool is healthy")
-                        return True
-                    else:
-                        self.logger.error(
-                            "Database health check returned unexpected result"
-                        )
-                        return False
-        except Exception as e:
-            self.logger.error(f"Database connection pool is not healthy: {e}")
-            return False
+            self.logger.info("No Tortoise connections to close")
 
     async def get_pool_stats(self) -> dict:
-        """Get connection pool statistics."""
-        if not self._pool:
-            return {"error": "Connection pool not initialized"}
+        """Get connection pool statistics from Tortoise."""
+        if not self._tortoise_initialized:
+            return {"error": "Tortoise ORM not initialized"}
 
         try:
-            stats = self._pool.get_stats()
-            return {
-                "pool_size": stats.get("pool_size", 0),
-                "checked_in": stats.get("checked_in", 0),
-                "checked_out": stats.get("checked_out", 0),
-                "overflow": stats.get("overflow", 0),
-                "checkedout_overflows": stats.get("checkedout_overflows", 0),
-                "returned_overflows": stats.get("returned_overflows", 0),
-            }
+            # Get connection pool info from Tortoise
+            connection = connections.get("default")
+            pool = connection._pool
+
+            if hasattr(pool, "get_stats"):
+                stats = pool.get_stats()
+                return {
+                    "pool_size": stats.get("pool_size", 0),
+                    "checked_in": stats.get("checked_in", 0),
+                    "checked_out": stats.get("checked_out", 0),
+                    "overflow": stats.get("overflow", 0),
+                    "checkedout_overflows": stats.get("checkedout_overflows", 0),
+                    "returned_overflows": stats.get("returned_overflows", 0),
+                    "tortoise_initialized": self._tortoise_initialized,
+                }
+            else:
+                # Fallback for when pool stats are not available
+                return {
+                    "pool_size": "unknown",
+                    "checked_in": "unknown",
+                    "checked_out": "unknown",
+                    "overflow": "unknown",
+                    "checkedout_overflows": "unknown",
+                    "returned_overflows": "unknown",
+                    "tortoise_initialized": self._tortoise_initialized,
+                    "note": "Pool statistics not available for this connection type",
+                }
         except Exception as e:
             self.logger.error(f"Error getting pool stats: {e}")
             return {"error": str(e)}
+
+    async def is_healthy(self) -> bool:
+        from app.data.database.wallets import Wallet
+        try:
+            await Wallet.all().limit(1)
+            return True
+        except Exception as e:
+            self.logger.error(f"Health check failed: {e}")
+            return False
+
+    def is_initialized(self) -> bool:
+        """Check if the database manager is properly initialized."""
+        return self._tortoise_initialized

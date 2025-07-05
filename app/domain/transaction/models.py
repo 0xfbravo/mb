@@ -60,6 +60,7 @@ class Transaction(BaseModel):
             "gas_limit": self.gas_limit,
         }
 
+
 class Pagination(BaseModel):
     """Pagination model"""
 
@@ -74,8 +75,10 @@ class Pagination(BaseModel):
             "total": self.total,
             "page": self.page,
             "next_page": self.next_page,
-            "prev_page": self.prev_page
+            "prev_page": self.prev_page,
         }
+
+
 class TransactionsPagination(BaseModel):
     """Transactions pagination model"""
 

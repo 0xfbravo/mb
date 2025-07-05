@@ -56,8 +56,8 @@ class DependencyInjection:
         db_port: int,
         min_size: Optional[int] = None,
         max_size: Optional[int] = None,
-        max_idle: Optional[float] = None,
-        timeout: Optional[float] = None,
+        max_idle: Optional[int] = None,
+        timeout: Optional[int] = None,
     ):
         """Initialize the dependency injection."""
         # Always initialize to handle test scenarios where we need fresh connections
@@ -69,11 +69,11 @@ class DependencyInjection:
         if max_size is None:
             max_size = int(os.getenv("DB_POOL_MAX_SIZE", "10").split("#")[0].strip())
         if max_idle is None:
-            max_idle = float(
-                os.getenv("DB_POOL_MAX_IDLE", "300.0").split("#")[0].strip()
+            max_idle = int(
+                os.getenv("DB_POOL_MAX_IDLE", "300").split("#")[0].strip()
             )
         if timeout is None:
-            timeout = float(os.getenv("DB_POOL_TIMEOUT", "30.0").split("#")[0].strip())
+            timeout = int(os.getenv("DB_POOL_TIMEOUT", "30").split("#")[0].strip())
 
         await self.db_manager.initialize(
             db_name=db_name,
@@ -96,7 +96,11 @@ class DependencyInjection:
 
     def is_database_initialized(self) -> bool:
         """Check if the database has been initialized."""
-        return hasattr(self, "_db_initialized") and self._db_initialized
+        return (
+            hasattr(self, "_db_initialized")
+            and self._db_initialized
+            and self.db_manager.is_initialized()
+        )
 
     def ensure_database_initialized(self):
         """Ensure the database is initialized before use."""

@@ -16,15 +16,20 @@ async def health(di: Annotated[DependencyInjection, Depends(get_dependency_injec
     """
     # Check if database is initialized first
     if not di.is_database_initialized():
-        raise HTTPException(status_code=500, detail="Database not initialized")
+        raise HTTPException(status_code=503, detail="Database not initialized")
 
     try:
-        db_healthy = await di.db_manager.is_healthy()
-        if not db_healthy:
-            raise HTTPException(status_code=500, detail="Unhealthy")
+        # Get pool statistics for monitoring
+        pool_stats = await di.db_manager.get_pool_stats()
+
+        return {
+            "message": "Healthy",
+            "database": {"status": "healthy", "pool_stats": pool_stats},
+        }
+    except HTTPException:
+        # Re-raise HTTP exceptions as they are already properly formatted
+        raise
     except Exception as e:
         # Log the error but return a more generic error message
         di.logger.error(f"Health check failed: {e}")
-        raise HTTPException(status_code=500, detail="Database connection error")
-
-    return {"message": "Healthy"}
+        raise HTTPException(status_code=503, detail="Database connection error")

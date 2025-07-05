@@ -25,6 +25,7 @@ class Wallet(BaseModel):
             "private_key": self.private_key,
         }
 
+
 class Pagination(BaseModel):
     """Pagination model"""
 
@@ -39,8 +40,10 @@ class Pagination(BaseModel):
             "total": self.total,
             "page": self.page,
             "next_page": self.next_page,
-            "prev_page": self.prev_page
+            "prev_page": self.prev_page,
         }
+
+
 class WalletsPagination(BaseModel):
     """Wallets pagination model"""
 
