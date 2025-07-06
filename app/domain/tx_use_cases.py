@@ -235,15 +235,15 @@ class TransactionUseCases:
             raise
 
     async def get_txs(
-        self, wallet_address: str, page: int = 1, limit: int = 100
+        self, wallet: str, page: int = 1, limit: int = 100
     ) -> TransactionsPagination:
         """Get all transactions for a wallet."""
         self.logger.info(
-            f"Getting all transactions for wallet {wallet_address}"
+            f"Getting all transactions for wallet {wallet}"
             f"from page {page} with limit {limit}"
         )
 
-        if wallet_address == "":
+        if wallet == "":
             self.logger.error("Wallet address is required")
             raise EmptyAddressError("Wallet")
 
@@ -257,42 +257,38 @@ class TransactionUseCases:
 
         try:
             # Get paginated transactions and total count
-            db_transactions, total_count = await asyncio.gather(
+            db_transactions, total = await asyncio.gather(
                 self.tx_repo.get_by_wallet(
-                    wallet_address, offset=(page - 1) * limit, limit=limit
+                    wallet, offset=(page - 1) * limit, limit=limit
                 ),
-                self.tx_repo.get_count_by_wallet(wallet_address),
+                self.tx_repo.get_count_by_wallet(wallet),
             )
 
             transactions = [Transaction().from_data(tx) for tx in db_transactions]
 
             # Calculate pagination metadata
-            total_pages = (total_count + limit - 1) // limit
+            total_pages = (total + limit - 1) // limit
             current_page = page
+            tx_count = len(transactions)
 
             self.logger.info(
-                f"Successfully retrieved {len(transactions)}"
-                f"of {total_count} transactions for wallet {wallet_address}"
+                f"Successfully retrieved {tx_count} of {total} txs for wallet {wallet}"
             )
 
             return TransactionsPagination(
                 transactions=transactions,
                 pagination=Pagination(
-                    total=total_count,
+                    total=total,
                     page=current_page,
                     next_page=current_page + 1 if current_page < total_pages else None,
                     prev_page=current_page - 1 if current_page > 1 else None,
                 ),
             )
         except RuntimeError as e:
-            self.logger.error(
-                f"Database error getting txs for wallet {wallet_address}: {e}"
-            )
+            self.logger.error(f"Database error getting txs for wallet {wallet}: {e}")
             raise DatabaseError("getting transactions by wallet", str(e))
         except Exception as e:
-            self.logger.error(
-                f"Unexpected error getting txs for wallet {wallet_address}: {e}"
-            )
+            self.logger.error(f"Unexpected error getting txs for wallet {wallet}: {e}")
             raise
 
     async def get_all(self, page: int = 1, limit: int = 100) -> TransactionsPagination:
@@ -315,7 +311,7 @@ class TransactionUseCases:
 
         try:
             # Get paginated transactions and total count
-            db_transactions, total_count = await asyncio.gather(
+            db_transactions, total = await asyncio.gather(
                 self.tx_repo.get_all(offset=(page - 1) * limit, limit=limit),
                 self.tx_repo.get_count(),
             )
@@ -323,18 +319,17 @@ class TransactionUseCases:
             transactions = [Transaction().from_data(tx) for tx in db_transactions]
 
             # Calculate pagination metadata
-            total_pages = (total_count + limit - 1) // limit
+            total_pages = (total + limit - 1) // limit
             current_page = page
 
             self.logger.info(
-                f"Successfully retrieved {len(transactions)}"
-                f"of {total_count} transactions"
+                f"Successfully retrieved {len(transactions)} of {total} txs"
             )
 
             return TransactionsPagination(
                 transactions=transactions,
                 pagination=Pagination(
-                    total=total_count,
+                    total=total,
                     page=current_page,
                     next_page=current_page + 1 if current_page < total_pages else None,
                     prev_page=current_page - 1 if current_page > 1 else None,

@@ -1,5 +1,2 @@
 [tool.black]
 line-length = 88
-per-file-ignores = [
-    "test/*:E501",
-]

@@ -799,7 +799,7 @@ class TestTransactionUseCases:
             f"from page {page} with limit {limit}"
         )
         mock_logger.info.assert_any_call(
-            f"Successfully retrieved 1 of 1 transactions for wallet {wallet_address}"
+            f"Successfully retrieved 1 of 1 txs for wallet {wallet_address}"
         )
 
     @pytest.mark.asyncio
@@ -881,7 +881,7 @@ class TestTransactionUseCases:
         mock_logger.info.assert_any_call(
             f"Getting all transactions from page {page} with limit {limit}"
         )
-        mock_logger.info.assert_any_call("Successfully retrieved 1 of 1 transactions")
+        mock_logger.info.assert_any_call("Successfully retrieved 1 of 1 txs")
 
     @pytest.mark.asyncio
     async def test_get_all_invalid_page(self, transaction_use_cases, mock_logger):
