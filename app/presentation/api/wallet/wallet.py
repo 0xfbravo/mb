@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
-from app.domain.wallet.models import Wallet, WalletsPagination
+from app.domain.wallet_models import Wallet, WalletsPagination
 from app.utils.di import DependencyInjection, get_dependency_injection
 
 # Tags

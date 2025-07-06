@@ -1,16 +1,21 @@
 from typing import Any
 from uuid import UUID
 
+from eth_typing import HexAddress
+from web3.types import TxParams
+
 from app.data.database import TransactionRepository
 from app.data.evm.main import EVMService
-from app.domain.transaction.errors import (DatabaseError, EmptyAddressError,
-                                           EmptyTransactionIdError,
-                                           InvalidAmountError,
-                                           InvalidAssetError,
-                                           InvalidPaginationError,
-                                           SameAddressError)
-from app.domain.transaction.models import (CreateTx, Pagination, Transaction,
-                                           TransactionsPagination)
+from app.domain.errors import (DatabaseError, EmptyAddressError,
+                               EmptyTransactionIdError, EVMServiceError,
+                               InsufficientBalanceError, InvalidAmountError,
+                               InvalidAssetError, InvalidNetworkError,
+                               InvalidPaginationError,
+                               InvalidWalletPrivateKeyError, SameAddressError,
+                               WalletNotFoundError)
+from app.domain.tx_models import (CreateTx, Pagination, Transaction,
+                                  TransactionsPagination)
+from app.domain.wallet_use_cases import WalletUseCases
 from app.utils.config_manager import ConfigManager
 
 
@@ -20,34 +25,32 @@ class TransactionUseCases:
     def __init__(
         self,
         config_manager: ConfigManager,
+        wallet_use_cases: WalletUseCases,
         evm_service: EVMService,
         tx_repo: TransactionRepository,
         logger: Any,
     ):
         self.config_manager = config_manager
+        self.wallet_use_cases = wallet_use_cases
         self.evm_service = evm_service
         self.tx_repo = tx_repo
         self.logger = logger
 
     async def create(self, tx_data: CreateTx) -> Transaction:
         """Create a new transaction."""
-        self.logger.info(
-            f"Creating transaction for {tx_data.asset}"
-            f"from {tx_data.from_address} to {tx_data.to_address}"
-        )
+        self.logger.info(f"Creating a new transaction for {tx_data.asset}")
 
         try:
             # Validate the transaction data
             selected_network = self.config_manager.get_selected_network()
             assets = self.config_manager.get_assets()
-            if (
-                tx_data.asset not in assets
-                or selected_network not in self.config_manager.get_networks()
-            ):
-                self.logger.error(
-                    f"Unable to trade {tx_data.asset} on {selected_network}"
-                )
+            if tx_data.asset not in assets:
+                self.logger.error(f"Asset {tx_data.asset} not available")
                 raise InvalidAssetError(tx_data.asset, selected_network)
+
+            if selected_network not in self.config_manager.get_networks():
+                self.logger.error(f"Network {selected_network} not available")
+                raise InvalidNetworkError(selected_network)
 
             if tx_data.amount <= 0:
                 self.logger.error("Amount must be greater than 0")
@@ -65,10 +68,69 @@ class TransactionUseCases:
                 self.logger.error("To address cannot be empty")
                 raise EmptyAddressError("To")
 
-            self.logger.info(
-                f"Creating transaction for {tx_data.asset} on {selected_network}"
+            asset_config = self.config_manager.get_asset(tx_data.asset)
+
+            if selected_network not in asset_config:
+                self.logger.error(
+                    f"Unable to transfer {tx_data.asset} on {selected_network}"
+                )
+                raise EVMServiceError(
+                    "transfer",
+                    f"Unable to transfer {tx_data.asset} on {selected_network}",
+                )
+
+            # Get wallet private key
+            from_wallet = await self.wallet_use_cases.get_by_address(
+                tx_data.from_address
             )
+            if from_wallet is None:
+                self.logger.error(f"Wallet {tx_data.from_address} not found")
+                raise WalletNotFoundError(tx_data.from_address)
+            from_wallet_private_key = from_wallet.private_key
+
+            if from_wallet_private_key is None or from_wallet_private_key == "":
+                self.logger.error(f"Wallet {tx_data.from_address} has no private key")
+                raise InvalidWalletPrivateKeyError(tx_data.from_address)
+
+            # Validate user balance
+            self.logger.info(
+                f"Validating user balance for transaction in {selected_network}"
+            )
+            balance = 0.0
+            if asset_config["native"]:
+                balance = self.evm_service.get_wallet_balance(tx_data.from_address)
+            else:
+                balance = self.evm_service.get_token_balance(
+                    tx_data.from_address, HexAddress(asset_config[selected_network])
+                )
+
+            if balance < tx_data.amount:
+                self.logger.error(f"Insufficient balance for {tx_data.asset}")
+                raise InsufficientBalanceError(tx_data.asset)
+
+            self.logger.info("Creating transaction data")
+
+            tx_params = TxParams()
+            if asset_config["native"]:
+                contract = self.evm_service.get_token_contract(
+                    HexAddress(asset_config[selected_network])
+                )
+            else:
+                contract = self.evm_service.get_token_contract(
+                    HexAddress(asset_config[selected_network])
+                )
+                tx_params = contract.functions.transfer(
+                    tx_data.to_address, tx_data.amount * 10**18
+                ).build_transaction()
+
+            self.logger.info("Sending transaction")
+            tx_hash = self.evm_service.send_transaction(
+                tx_params, from_wallet_private_key
+            )
+
+            self.logger.info("Saving transaction to database in pending state")
             db_transaction = await self.tx_repo.create(
+                tx_hash=tx_hash.hex(),
                 asset=tx_data.asset,
                 network=selected_network,
                 from_address=tx_data.from_address,

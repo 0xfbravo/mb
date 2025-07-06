@@ -51,9 +51,9 @@ class TestMainModuleUnit:
         assert FastAPI is not None
 
         # Test that our router can be imported
-        from app.presentation.api import router
+        from app.presentation.api import api_router
 
-        assert router is not None
+        assert api_router is not None
 
     def test_app_has_expected_attributes(self):
         """Test that the FastAPI app has expected attributes."""
@@ -106,26 +106,28 @@ class TestMainModuleUnit:
         app = main.app
 
         # Test that the app has the expected configuration
-        assert app.title == os.getenv("TITLE", "")
-        assert app.version == os.getenv("VERSION", "")
-        assert app.description is not None
+        assert app.title == os.getenv("TITLE", "MB API")
+        assert app.version == os.getenv("VERSION", "1.0.0")
+        assert app.description == os.getenv(
+            "DESCRIPTION", "MB API for blockchain operations"
+        )
 
     def test_router_structure(self):
         """Test that the router structure is correct."""
-        from app.presentation.api import router
+        from app.presentation.api import api_router
 
         # Test that the router has the expected prefix
-        assert router.prefix == "/api"
+        assert api_router.prefix == "/api"
 
         # Test that the router has routes
-        assert len(router.routes) > 0
+        assert len(api_router.routes) > 0
 
     def test_all_routers_included(self):
         """Test that all sub-routers are included in the main router."""
-        from app.presentation.api import router
+        from app.presentation.api import api_router
 
         # Check that all expected routers are included
-        route_paths = [str(route) for route in router.routes]
+        route_paths = [str(route) for route in api_router.routes]
 
         # Should have health, wallet, and transaction routes
         assert any("/health" in path for path in route_paths)
@@ -178,35 +180,35 @@ class TestRouterEndpointsUnit:
 
     def test_health_router_structure(self):
         """Test that the health router has the correct structure."""
-        from app.presentation.api.health import router
+        from app.presentation.api.health import health_router
 
-        assert router.prefix == "/health"
-        assert len(router.routes) > 0
+        assert health_router.prefix == "/health"
+        assert len(health_router.routes) > 0
 
     def test_wallet_router_structure(self):
         """Test that the wallet router has the correct structure."""
-        from app.presentation.api.wallet import router
+        from app.presentation.api.wallet import wallet_router
 
-        assert router.prefix == "/wallet"
-        assert len(router.routes) > 0
+        assert wallet_router.prefix == "/wallet"
+        assert len(wallet_router.routes) > 0
 
     def test_transaction_router_structure(self):
         """Test that the transaction router has the correct structure."""
-        from app.presentation.api.transaction import router
+        from app.presentation.api.transaction import transaction_router
 
-        assert router.prefix == "/tx"
-        assert len(router.routes) > 0
+        assert transaction_router.prefix == "/tx"
+        assert len(transaction_router.routes) > 0
 
     def test_router_tags(self):
         """Test that routers have proper tags for OpenAPI documentation."""
-        from app.presentation.api.health import router as health_router
-        from app.presentation.api.transaction import router as tx_router
-        from app.presentation.api.wallet import router as wallet_router
+        from app.presentation.api.health import health_router
+        from app.presentation.api.transaction import transaction_router
+        from app.presentation.api.wallet import wallet_router
 
         # Check that routers have tags
         assert health_router.tags == ["💊 Health check"]
         assert wallet_router.tags == ["🔐 Wallet"]
-        assert tx_router.tags == ["💰 Transaction"]
+        assert transaction_router.tags == ["💰 Transaction"]
 
 
 if __name__ == "__main__":

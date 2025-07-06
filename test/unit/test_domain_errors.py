@@ -2,23 +2,23 @@
 
 import pytest
 
-from app.domain.errors import (BusinessRuleError, ConfigurationError,
-                               DomainError, InvalidInputError, NotFoundError,
-                               ValidationError)
-from app.domain.transaction.errors import (DatabaseError, EmptyAddressError,
-                                           EVMServiceError, InvalidAmountError,
-                                           InvalidAssetError,
-                                           InvalidPaginationError,
-                                           SameAddressError, TransactionError,
-                                           TransactionNotFoundError)
-from app.domain.wallet.errors import BatchOperationError
-from app.domain.wallet.errors import DatabaseError as WalletDatabaseError
-from app.domain.wallet.errors import EVMServiceError as WalletEVMServiceError
-from app.domain.wallet.errors import \
+from app.domain.errors import (BatchOperationError, BusinessRuleError,
+                               ConfigurationError)
+from app.domain.errors import DatabaseError
+from app.domain.errors import DatabaseError as WalletDatabaseError
+from app.domain.errors import DomainError, EmptyAddressError
+from app.domain.errors import EVMServiceError
+from app.domain.errors import EVMServiceError as WalletEVMServiceError
+from app.domain.errors import (InvalidAmountError, InvalidAssetError,
+                               InvalidInputError)
+from app.domain.errors import InvalidPaginationError
+from app.domain.errors import \
     InvalidPaginationError as WalletInvalidPaginationError
-from app.domain.wallet.errors import (InvalidWalletAddressError,
-                                      WalletCreationError, WalletError,
-                                      WalletNotFoundError)
+from app.domain.errors import (InvalidWalletAddressError, NotFoundError,
+                               SameAddressError, TransactionError,
+                               TransactionNotFoundError, ValidationError,
+                               WalletCreationError, WalletError,
+                               WalletNotFoundError)
 
 
 class TestDomainErrors:
@@ -199,9 +199,6 @@ class TestErrorInheritance:
         assert issubclass(InvalidWalletAddressError, WalletError)
         assert issubclass(WalletNotFoundError, WalletError)
         assert issubclass(WalletCreationError, WalletError)
-        assert issubclass(WalletInvalidPaginationError, WalletError)
-        assert issubclass(WalletDatabaseError, WalletError)
-        assert issubclass(WalletEVMServiceError, WalletError)
         assert issubclass(BatchOperationError, WalletError)
 
     def test_domain_error_inheritance(self):

@@ -12,17 +12,20 @@ from app.data.database.errors import (DatabaseConnectionError,
                                       TransactionRetrievalError,
                                       TransactionUpdateError)
 from app.data.database.main import DatabaseManager
-from app.domain.transaction.enum import Status
+from app.domain.enums import TransactionStatus
 
 
 class Transaction(Model):
     id = fields.UUIDField(primary_key=True, default=uuid.uuid4)
+    tx_hash = fields.CharField(max_length=255)
     asset = fields.CharField(max_length=10)
     network = fields.CharField(max_length=255)
     from_address = fields.CharField(max_length=255)
     to_address = fields.CharField(max_length=255)
     amount = fields.FloatField()
-    status = fields.CharEnumField(enum_type=Status, default=Status.PENDING)
+    status = fields.CharEnumField(
+        enum_type=TransactionStatus, default=TransactionStatus.PENDING
+    )
     gas_price = fields.IntField()
     gas_limit = fields.IntField()
     created_at = fields.DatetimeField(auto_now_add=True)
@@ -38,6 +41,7 @@ class TransactionRepository:
 
     async def create(
         self,
+        tx_hash: str,
         asset: str,
         network: str,
         from_address: str,
@@ -49,6 +53,7 @@ class TransactionRepository:
         """Create a new transaction."""
         try:
             return await Transaction.create(
+                tx_hash=tx_hash,
                 asset=asset,
                 network=network,
                 from_address=from_address,
@@ -113,7 +118,9 @@ class TransactionRepository:
             self.logger.error(f"Error getting transactions by wallet: {e}")
             raise TransactionRetrievalError("getting by wallet", wallet_address, e)
 
-    async def update_status(self, transaction_id: str, status: Status) -> Transaction:
+    async def update_status(
+        self, transaction_id: str, status: TransactionStatus
+    ) -> Transaction:
         """Update transaction status."""
         try:
             transaction = await Transaction.get(id=transaction_id)

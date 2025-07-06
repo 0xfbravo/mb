@@ -3,13 +3,10 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from app.domain.transaction.errors import (EmptyAddressError,
-                                           EmptyTransactionIdError,
-                                           InvalidAmountError,
-                                           InvalidAssetError, SameAddressError)
-from app.domain.transaction.models import (CreateTx, Transaction,
-                                           TransactionsPagination)
-from app.domain.wallet.errors import InvalidPaginationError
+from app.domain.errors import (EmptyAddressError, EmptyTransactionIdError,
+                               InvalidAmountError, InvalidAssetError,
+                               InvalidPaginationError, SameAddressError)
+from app.domain.tx_models import CreateTx, Transaction, TransactionsPagination
 from app.utils.di import DependencyInjection, get_dependency_injection
 
 # Tags

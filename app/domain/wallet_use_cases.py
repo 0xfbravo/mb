@@ -3,11 +3,10 @@ from typing import Any
 
 from app.data.database import WalletRepository
 from app.data.evm.main import EVMService
-from app.domain.wallet.errors import (BatchOperationError, DatabaseError,
-                                      EVMServiceError, InvalidPaginationError,
-                                      InvalidWalletAddressError,
-                                      WalletCreationError)
-from app.domain.wallet.models import Pagination, Wallet, WalletsPagination
+from app.domain.errors import (BatchOperationError, DatabaseError,
+                               EVMServiceError, InvalidPaginationError,
+                               InvalidWalletAddressError, WalletCreationError)
+from app.domain.wallet_models import Pagination, Wallet, WalletsPagination
 
 
 class WalletUseCases:

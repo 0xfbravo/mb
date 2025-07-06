@@ -12,7 +12,7 @@ from app.data.database.errors import (DatabaseConnectionError,
                                       WalletNotFoundError,
                                       WalletRetrievalError)
 from app.data.database.main import DatabaseManager
-from app.domain.wallet.enum import WalletStatus
+from app.domain.enums import WalletStatus
 
 
 class Wallet(Model):

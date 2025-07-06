@@ -5,8 +5,10 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 
-from app import (DependencyInjection, RequestLoggerMiddleware, router,
-                 setup_loguru)
+from app.presentation.api import api_router
+from app.utils.di import DependencyInjection
+from app.utils.request_log import RequestLoggerMiddleware
+from app.utils.setup_log import setup_loguru
 
 """
 Main entry point for the application.
@@ -69,9 +71,9 @@ async def lifespan(app: FastAPI):
 
 
 # Create app with lifespan handler
-title = os.getenv("TITLE", "")
-version = os.getenv("VERSION", "")
-description = os.getenv("DESCRIPTION", "")
+title = os.getenv("TITLE", "MB API")
+version = os.getenv("VERSION", "1.0.0")
+description = os.getenv("DESCRIPTION", "MB API for blockchain operations")
 app = FastAPI(
     title=title,
     contact={
@@ -90,5 +92,5 @@ async def root():
     return RedirectResponse(url="/docs")
 
 
-app.include_router(router)
+app.include_router(api_router)
 app.add_middleware(RequestLoggerMiddleware)

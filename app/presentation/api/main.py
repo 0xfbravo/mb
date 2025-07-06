@@ -1,10 +1,10 @@
 from fastapi import APIRouter
 
-from app.presentation.api.health import router as health_router
-from app.presentation.api.transaction import router as transaction_router
-from app.presentation.api.wallet import router as wallet_router
+from app.presentation.api.health import health_router
+from app.presentation.api.transaction import transaction_router
+from app.presentation.api.wallet import wallet_router
 
-router = APIRouter(prefix="/api")
-router.include_router(wallet_router)  # type: ignore
-router.include_router(transaction_router)  # type: ignore
-router.include_router(health_router)  # type: ignore
+api_router = APIRouter(prefix="/api")
+api_router.include_router(wallet_router)
+api_router.include_router(transaction_router)
+api_router.include_router(health_router)

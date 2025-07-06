@@ -4,16 +4,17 @@ Integration tests for the main FastAPI application.
 These tests verify that the main application works correctly with all components integrated.
 """
 
-import asyncio
 import os
 
 import pytest
 import pytest_asyncio
 from dotenv import load_dotenv
 from fastapi import FastAPI
-from httpx import ASGITransport, AsyncClient, Response
+from httpx import ASGITransport, AsyncClient
 
-from app import DependencyInjection, router, setup_loguru
+from app.presentation.api import api_router
+from app.utils.di import DependencyInjection
+from app.utils.setup_log import setup_loguru
 
 load_dotenv()
 
@@ -26,7 +27,7 @@ class TestMainAppIntegration:
         """Create a test FastAPI app with TEST database configuration."""
         setup_loguru()
         app = FastAPI()
-        app.include_router(router)
+        app.include_router(api_router)
         return app
 
     @pytest_asyncio.fixture

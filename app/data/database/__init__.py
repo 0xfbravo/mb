@@ -1,13 +1,11 @@
 from .main import DatabaseManager
-from .transactions import Status, Transaction, TransactionRepository
-from .wallets import Wallet, WalletRepository, WalletStatus
+from .transactions import Transaction, TransactionRepository
+from .wallets import Wallet, WalletRepository
 
 __all__ = [
     "DatabaseManager",
     "Transaction",
     "TransactionRepository",
-    "Status",
-    "WalletStatus",
     "Wallet",
     "WalletRepository",
 ]
