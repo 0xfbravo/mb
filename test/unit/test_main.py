@@ -180,30 +180,30 @@ class TestRouterEndpointsUnit:
 
     def test_health_router_structure(self):
         """Test that the health router has the correct structure."""
-        from app.presentation.api.health import health_router
+        from app.presentation.api.health import router
 
-        assert health_router.prefix == "/health"
-        assert len(health_router.routes) > 0
+        assert router.prefix == "/health"
+        assert len(router.routes) > 0
 
     def test_wallet_router_structure(self):
         """Test that the wallet router has the correct structure."""
-        from app.presentation.api.wallet import wallet_router
+        from app.presentation.api.wallet import router
 
-        assert wallet_router.prefix == "/wallet"
-        assert len(wallet_router.routes) > 0
+        assert router.prefix == "/wallet"
+        assert len(router.routes) > 0
 
     def test_transaction_router_structure(self):
         """Test that the transaction router has the correct structure."""
-        from app.presentation.api.transaction import transaction_router
+        from app.presentation.api.transaction import router
 
-        assert transaction_router.prefix == "/tx"
-        assert len(transaction_router.routes) > 0
+        assert router.prefix == "/tx"
+        assert len(router.routes) > 0
 
     def test_router_tags(self):
         """Test that routers have proper tags for OpenAPI documentation."""
-        from app.presentation.api.health import health_router
-        from app.presentation.api.transaction import transaction_router
-        from app.presentation.api.wallet import wallet_router
+        from app.presentation.api.health import router as health_router
+        from app.presentation.api.transaction import router as transaction_router
+        from app.presentation.api.wallet import router as wallet_router
 
         # Check that routers have tags
         assert health_router.tags == ["💊 Health check"]
