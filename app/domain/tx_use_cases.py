@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any
 from uuid import UUID
 
@@ -255,16 +256,32 @@ class TransactionUseCases:
             raise InvalidPaginationError("Limit must be greater than 0")
 
         try:
-            db_transactions = await self.tx_repo.get_by_wallet(
-                wallet_address, offset=(page - 1) * limit, limit=limit
+            # Get paginated transactions and total count
+            db_transactions, total_count = await asyncio.gather(
+                self.tx_repo.get_by_wallet(
+                    wallet_address, offset=(page - 1) * limit, limit=limit
+                ),
+                self.tx_repo.get_count_by_wallet(wallet_address),
             )
+
+            transactions = [Transaction().from_data(tx) for tx in db_transactions]
+
+            # Calculate pagination metadata
+            total_pages = (total_count + limit - 1) // limit
+            current_page = page
+
+            self.logger.info(
+                f"Successfully retrieved {len(transactions)}"
+                f"of {total_count} transactions for wallet {wallet_address}"
+            )
+
             return TransactionsPagination(
-                transactions=[Transaction().from_data(tx) for tx in db_transactions],
+                transactions=transactions,
                 pagination=Pagination(
-                    total=len(db_transactions),
-                    page=page,
-                    next_page=page + 1 if page < len(db_transactions) else None,
-                    prev_page=None,
+                    total=total_count,
+                    page=current_page,
+                    next_page=current_page + 1 if current_page < total_pages else None,
+                    prev_page=current_page - 1 if current_page > 1 else None,
                 ),
             )
         except RuntimeError as e:
@@ -297,16 +314,30 @@ class TransactionUseCases:
             raise InvalidPaginationError("Limit must be less than 1000")
 
         try:
-            db_transactions = await self.tx_repo.get_all(
-                offset=(page - 1) * limit, limit=limit
+            # Get paginated transactions and total count
+            db_transactions, total_count = await asyncio.gather(
+                self.tx_repo.get_all(offset=(page - 1) * limit, limit=limit),
+                self.tx_repo.get_count(),
             )
+
+            transactions = [Transaction().from_data(tx) for tx in db_transactions]
+
+            # Calculate pagination metadata
+            total_pages = (total_count + limit - 1) // limit
+            current_page = page
+
+            self.logger.info(
+                f"Successfully retrieved {len(transactions)}"
+                f"of {total_count} transactions"
+            )
+
             return TransactionsPagination(
-                transactions=[Transaction().from_data(tx) for tx in db_transactions],
+                transactions=transactions,
                 pagination=Pagination(
-                    total=len(db_transactions),
-                    page=page,
-                    next_page=page + 1 if page < len(db_transactions) else None,
-                    prev_page=page - 1 if page > 1 else None,
+                    total=total_count,
+                    page=current_page,
+                    next_page=current_page + 1 if current_page < total_pages else None,
+                    prev_page=current_page - 1 if current_page > 1 else None,
                 ),
             )
         except RuntimeError as e:

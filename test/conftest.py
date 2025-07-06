@@ -78,6 +78,9 @@ def mock_wallet_repository():
     repo.get_by_address = AsyncMock()
     repo.get_by_id = AsyncMock()
     repo.get_all = AsyncMock()
+    repo.get_count = AsyncMock(return_value=1)
+    repo.get_native_balance = AsyncMock()
+    repo.get_token_balance = AsyncMock()
     return repo
 
 
@@ -90,7 +93,41 @@ def mock_transaction_repository():
     repo.get_by_tx_hash = AsyncMock()
     repo.get_by_wallet = AsyncMock()
     repo.get_all = AsyncMock()
+    repo.get_count = AsyncMock(return_value=1)
+    repo.get_count_by_wallet = AsyncMock(return_value=1)
     return repo
+
+
+@pytest.fixture
+def mock_evm_service():
+    """Create a mock EVM service for testing."""
+    evm_service = MagicMock()
+    evm_service.send_transaction = MagicMock()
+    evm_service.get_token_contract = MagicMock()
+    evm_service.get_native_balance = AsyncMock()
+    evm_service.get_token_balance = AsyncMock()
+    return evm_service
+
+
+@pytest.fixture
+def mock_assets_use_cases():
+    """Create a mock assets use cases for testing."""
+    assets_use_cases = MagicMock()
+    assets_use_cases.is_native_asset = MagicMock(return_value=False)
+    assets_use_cases.get_asset_config = MagicMock()
+    return assets_use_cases
+
+
+@pytest.fixture
+def mock_config_manager():
+    """Create a mock config manager for testing."""
+    config_manager = MagicMock()
+    config_manager.get_current_network = MagicMock(return_value="ethereum")
+    config_manager.get_networks = MagicMock(return_value=["ethereum", "polygon"])
+    config_manager.get_asset = MagicMock(
+        return_value={"ethereum": "0x1234567890abcdef1234567890abcdef1234567890"}
+    )
+    return config_manager
 
 
 @pytest.fixture

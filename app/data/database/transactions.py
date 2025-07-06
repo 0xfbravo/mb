@@ -107,7 +107,8 @@ class TransactionRepository:
         """Get all transactions for a wallet."""
         try:
             return (
-                await Transaction.filter(wallet_address=wallet_address)
+                await Transaction.filter(from_address=wallet_address)
+                .order_by("-created_at")
                 .offset(offset)
                 .limit(limit)
             )
@@ -153,3 +154,27 @@ class TransactionRepository:
         except Exception as e:
             self.logger.error(f"Error getting all transactions: {e}")
             raise TransactionRetrievalError("getting all transactions", "all", e)
+
+    async def get_count(self) -> int:
+        """Get total count of transactions."""
+        try:
+            return await Transaction.all().count()
+        except (OperationalError, ConnectionDoesNotExistError) as e:
+            self.logger.error(f"Database connection error in get_count: {e}")
+            raise DatabaseConnectionError("get_count", e)
+        except Exception as e:
+            self.logger.error(f"Error getting transaction count: {e}")
+            raise TransactionRetrievalError("getting transaction count", "count", e)
+
+    async def get_count_by_wallet(self, wallet_address: str) -> int:
+        """Get total count of transactions for a wallet."""
+        try:
+            return await Transaction.filter(from_address=wallet_address).count()
+        except (OperationalError, ConnectionDoesNotExistError) as e:
+            self.logger.error(f"Database connection error in get_count_by_wallet: {e}")
+            raise DatabaseConnectionError("get_count_by_wallet", e)
+        except Exception as e:
+            self.logger.error(f"Error getting transaction count by wallet: {e}")
+            raise TransactionRetrievalError(
+                "getting transaction count by wallet", wallet_address, e
+            )
