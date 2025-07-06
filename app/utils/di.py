@@ -8,6 +8,7 @@ from loguru import logger
 from app.data.database import (DatabaseManager, TransactionRepository,
                                WalletRepository)
 from app.data.evm.main import EVMService
+from app.domain.assets_use_cases import AssetsUseCases
 from app.domain.tx_use_cases import TransactionUseCases
 from app.domain.wallet_use_cases import WalletUseCases
 from app.utils.config_manager import ConfigManager
@@ -50,14 +51,16 @@ class DependencyInjection:
                 ),
                 self.logger,
             )
+            self.assets_uc = AssetsUseCases(self.config_manager, self.logger)
             self.wallet_repo = WalletRepository(self.db_manager, self.logger)
             self.wallet_uc = WalletUseCases(
-                self.wallet_repo, self.evm_service, self.logger
+                self.wallet_repo, self.evm_service, self.assets_uc, self.logger
             )
             self.tx_repo = TransactionRepository(self.db_manager, self.logger)
             self.tx_uc = TransactionUseCases(
                 self.config_manager,
                 self.wallet_uc,
+                self.assets_uc,
                 self.evm_service,
                 self.tx_repo,
                 self.logger,

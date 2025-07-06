@@ -2,19 +2,23 @@
 
 import pytest
 
-from app.domain.errors import (BatchOperationError, BusinessRuleError,
+from app.domain.errors import (AssetNotFoundError, AssetsError,
+                               BatchOperationError, BusinessRuleError,
                                ConfigurationError)
 from app.domain.errors import DatabaseError
 from app.domain.errors import DatabaseError as WalletDatabaseError
-from app.domain.errors import DomainError, EmptyAddressError
+from app.domain.errors import (DomainError, EmptyAddressError,
+                               EmptyTransactionIdError)
 from app.domain.errors import EVMServiceError
 from app.domain.errors import EVMServiceError as WalletEVMServiceError
-from app.domain.errors import (InvalidAmountError, InvalidAssetError,
-                               InvalidInputError)
+from app.domain.errors import (InsufficientBalanceError, InvalidAddressError,
+                               InvalidAmountError, InvalidInputError,
+                               InvalidNetworkError)
 from app.domain.errors import InvalidPaginationError
 from app.domain.errors import \
     InvalidPaginationError as WalletInvalidPaginationError
-from app.domain.errors import (InvalidWalletAddressError, NotFoundError,
+from app.domain.errors import (InvalidTxAssetError, InvalidWalletAddressError,
+                               InvalidWalletPrivateKeyError, NotFoundError,
                                SameAddressError, TransactionError,
                                TransactionNotFoundError, ValidationError,
                                WalletCreationError, WalletError,
@@ -71,8 +75,8 @@ class TestTransactionErrors:
 
     def test_invalid_asset_error(self):
         """Test invalid asset error."""
-        error = InvalidAssetError("BTC", "Ethereum")
-        assert str(error) == 'Unable to trade "BTC" on our current network "Ethereum"'
+        error = InvalidTxAssetError("BTC", "Ethereum")
+        assert str(error) == "Unable to trade 'BTC' on our current network 'Ethereum'"
         assert error.asset == "BTC"
         assert error.network == "Ethereum"
 
@@ -179,25 +183,80 @@ class TestWalletErrors:
         error = WalletInvalidPaginationError("Limit exceeds maximum")
         assert str(error) == "Limit exceeds maximum"
 
+    def test_invalid_wallet_private_key_error(self):
+        """Test invalid wallet private key error."""
+        error = InvalidWalletPrivateKeyError("0x789")
+        assert str(error) == "Invalid wallet private key: 0x789"
+        assert error.address == "0x789"
+
+
+class TestAssetsErrors:
+    """Test assets-specific errors."""
+
+    def test_assets_error_base(self):
+        """Test base assets error."""
+        error = AssetsError("Assets operation failed")
+        assert str(error) == "Assets operation failed"
+
+    def test_asset_not_found_error(self):
+        """Test asset not found error."""
+        error = AssetNotFoundError("BTC", "Ethereum")
+        assert str(error) == "Asset 'BTC' not found on network 'Ethereum'"
+        assert error.asset == "BTC"
+        assert error.network == "Ethereum"
+
+
+class TestAdditionalTransactionErrors:
+    """Test additional transaction-specific errors."""
+
+    def test_invalid_network_error(self):
+        """Test invalid network error."""
+        error = InvalidNetworkError("Bitcoin")
+        assert str(error) == "Network Bitcoin not available"
+        assert error.network == "Bitcoin"
+
+    def test_invalid_address_error(self):
+        """Test invalid address error."""
+        error = InvalidAddressError("Address format is invalid")
+        assert str(error) == "Address format is invalid"
+
+    def test_empty_transaction_id_error(self):
+        """Test empty transaction ID error."""
+        error = EmptyTransactionIdError()
+        assert str(error) == "Transaction ID cannot be empty"
+
+    def test_insufficient_balance_error(self):
+        """Test insufficient balance error."""
+        error = InsufficientBalanceError("ETH", 5.0, 10.0)
+        assert str(error) == "Insufficient balance for trading ETH:5.0 ETH < 10.0 ETH"
+        assert error.asset == "ETH"
+        assert error.balance == 5.0
+        assert error.amount == 10.0
+
 
 class TestErrorInheritance:
     """Test error inheritance hierarchy."""
 
     def test_transaction_error_inheritance(self):
         """Test that transaction errors inherit from TransactionError."""
-        assert issubclass(InvalidAssetError, TransactionError)
+        assert issubclass(InvalidTxAssetError, TransactionError)
+        assert issubclass(InvalidNetworkError, TransactionError)
         assert issubclass(InvalidAmountError, TransactionError)
+        assert issubclass(InvalidAddressError, TransactionError)
         assert issubclass(SameAddressError, TransactionError)
         assert issubclass(EmptyAddressError, TransactionError)
+        assert issubclass(EmptyTransactionIdError, TransactionError)
         assert issubclass(TransactionNotFoundError, TransactionError)
         assert issubclass(InvalidPaginationError, TransactionError)
         assert issubclass(DatabaseError, TransactionError)
         assert issubclass(EVMServiceError, TransactionError)
+        assert issubclass(InsufficientBalanceError, TransactionError)
 
     def test_wallet_error_inheritance(self):
         """Test that wallet errors inherit from WalletError."""
         assert issubclass(InvalidWalletAddressError, WalletError)
         assert issubclass(WalletNotFoundError, WalletError)
+        assert issubclass(InvalidWalletPrivateKeyError, WalletError)
         assert issubclass(WalletCreationError, WalletError)
         assert issubclass(BatchOperationError, WalletError)
 
@@ -208,3 +267,7 @@ class TestErrorInheritance:
         assert issubclass(InvalidInputError, DomainError)
         assert issubclass(BusinessRuleError, DomainError)
         assert issubclass(ConfigurationError, DomainError)
+
+    def test_assets_error_inheritance(self):
+        """Test that assets errors inherit from AssetsError."""
+        assert issubclass(AssetNotFoundError, AssetsError)

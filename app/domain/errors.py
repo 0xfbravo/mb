@@ -54,7 +54,19 @@ class ConfigurationError(DomainError):
         super().__init__(message)
 
 
-"""Custom error classes for wallet domain."""
+class AssetsError(Exception):
+    """Base exception for assets-related errors."""
+
+    pass
+
+
+class AssetNotFoundError(AssetsError):
+    """Raised when an asset is not found."""
+
+    def __init__(self, asset: str, network: str):
+        self.asset = asset
+        self.network = network
+        super().__init__(f"Asset '{asset}' not found on network '{network}'")
 
 
 class WalletError(Exception):
@@ -104,23 +116,20 @@ class BatchOperationError(WalletError):
         super().__init__(f"Batch {operation} failed: {details}")
 
 
-"""Custom error classes for transaction domain."""
-
-
 class TransactionError(Exception):
     """Base exception for transaction-related errors."""
 
     pass
 
 
-class InvalidAssetError(TransactionError):
+class InvalidTxAssetError(TransactionError):
     """Raised when an asset is not supported on the selected network."""
 
     def __init__(self, asset: str, network: str):
         self.asset = asset
         self.network = network
         super().__init__(
-            f'Unable to trade "{asset}" on our current network "{network}"'
+            f"Unable to trade '{asset}' on our current network '{network}'"
         )
 
 

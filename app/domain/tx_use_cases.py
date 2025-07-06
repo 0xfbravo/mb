@@ -6,11 +6,12 @@ from web3.types import TxParams, Wei
 
 from app.data.database import TransactionRepository
 from app.data.evm.main import EVMService
+from app.domain.assets_use_cases import AssetsUseCases
 from app.domain.errors import (DatabaseError, EmptyAddressError,
                                EmptyTransactionIdError, EVMServiceError,
                                InsufficientBalanceError, InvalidAmountError,
-                               InvalidAssetError, InvalidNetworkError,
-                               InvalidPaginationError,
+                               InvalidNetworkError, InvalidPaginationError,
+                               InvalidTxAssetError,
                                InvalidWalletPrivateKeyError, SameAddressError,
                                WalletNotFoundError)
 from app.domain.tx_models import (CreateTx, Pagination, Transaction,
@@ -26,12 +27,14 @@ class TransactionUseCases:
         self,
         config_manager: ConfigManager,
         wallet_use_cases: WalletUseCases,
+        assets_use_cases: AssetsUseCases,
         evm_service: EVMService,
         tx_repo: TransactionRepository,
         logger: Any,
     ):
         self.config_manager = config_manager
         self.wallet_use_cases = wallet_use_cases
+        self.assets_use_cases = assets_use_cases
         self.evm_service = evm_service
         self.tx_repo = tx_repo
         self.logger = logger
@@ -63,10 +66,8 @@ class TransactionUseCases:
                 self.logger.error("To address cannot be empty")
                 raise EmptyAddressError("To")
 
-            native_asset = self.config_manager.get_native_asset()
-            is_native_asset = create_tx.asset == native_asset
-
             asset_config = {}
+            is_native_asset = self.assets_use_cases.is_native_asset(create_tx.asset)
             if not is_native_asset:
                 asset_config = self.config_manager.get_asset(create_tx.asset)
 
@@ -80,19 +81,14 @@ class TransactionUseCases:
                 )
 
             self.logger.info("Validating balance")
-            self._validate_balance(
+            await self.validate_balance(
                 create_tx.asset,
                 create_tx.from_address,
                 create_tx.amount,
-                current_network,
-                asset_config,
-                is_native_asset,
             )
 
             self.logger.info("Creating transaction data")
-            tx_params = self._create_tx_params(
-                create_tx, current_network, asset_config, is_native_asset
-            )
+            tx_params = self._create_tx_params(create_tx, current_network, asset_config)
             from_wallet_private_key = await self._validate_wallet_private_key(
                 create_tx.from_address
             )
@@ -114,7 +110,7 @@ class TransactionUseCases:
 
             return Transaction().from_data(db_transaction)
         except (
-            InvalidAssetError,
+            InvalidTxAssetError,
             InvalidAmountError,
             SameAddressError,
             EmptyAddressError,
@@ -153,11 +149,10 @@ class TransactionUseCases:
         create_tx: CreateTx,
         current_network: str,
         asset_config: dict,
-        is_native_asset: bool,
     ) -> TxParams:
         """Create transaction parameters for the given transaction data."""
         self.logger.info("Creating transaction parameters")
-        if is_native_asset:
+        if self.assets_use_cases.is_native_asset(create_tx.asset):
             self.logger.info("Creating native asset transaction parameters")
             return TxParams(
                 to=create_tx.to_address,
@@ -173,26 +168,22 @@ class TransactionUseCases:
                 create_tx.to_address, create_tx.amount * 10**18
             ).build_transaction()
 
-    def _validate_balance(
+    async def validate_balance(
         self,
         asset: str,
         from_address: HexAddress,
         amount: float,
-        current_network: str,
-        asset_config: dict,
-        is_native_asset: bool,
     ) -> None:
         """Validate that the wallet has sufficient balance for the transaction."""
         self.logger.info(
-            f"Validating user balance for transaction in {current_network}"
+            f"Validating user balance for transaction"
+            f" of {asset} from {from_address} with amount {amount}"
         )
         balance = 0.0
-        if is_native_asset:
-            balance = self.evm_service.get_wallet_balance(from_address)
+        if self.assets_use_cases.is_native_asset(asset):
+            balance = await self.wallet_use_cases.get_native_balance(from_address)
         else:
-            balance = self.evm_service.get_token_balance(
-                from_address, asset_config[current_network]
-            )
+            balance = await self.wallet_use_cases.get_token_balance(asset, from_address)
 
         if balance < amount:
             self.logger.error(f"Insufficient balance for {asset}")

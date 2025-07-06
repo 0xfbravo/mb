@@ -5,8 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.domain.errors import (EmptyAddressError, EmptyTransactionIdError,
                                InsufficientBalanceError, InvalidAmountError,
-                               InvalidAssetError, InvalidNetworkError,
-                               InvalidPaginationError,
+                               InvalidNetworkError, InvalidPaginationError,
+                               InvalidTxAssetError,
                                InvalidWalletPrivateKeyError, SameAddressError,
                                WalletNotFoundError)
 from app.domain.tx_models import CreateTx, Transaction, TransactionsPagination
@@ -29,7 +29,7 @@ async def create_tx(
         di.logger.info(f"Creating transaction: {tx}")
         return await di.tx_uc.create(tx)
     except (
-        InvalidAssetError,
+        InvalidTxAssetError,
         InvalidAmountError,
         SameAddressError,
         EmptyAddressError,
