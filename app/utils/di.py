@@ -10,6 +10,7 @@ from app.data.database import (DatabaseManager, TransactionRepository,
 from app.data.evm.main import EVMService
 from app.domain.transaction.use_cases import TransactionUseCases
 from app.domain.wallet.use_cases import WalletUseCases
+from app.utils.config_manager import ConfigManager
 
 
 def get_dependency_injection() -> "DependencyInjection":
@@ -41,9 +42,12 @@ class DependencyInjection:
             logger.info("Initializing dependency injection")
             self.logger = logger
             self.db_manager = DatabaseManager(self.logger)
+            self.config_manager = ConfigManager()
             self.evm_service = EVMService(
-                os.getenv("USE_TEST_PROVIDER", "False") == "True",
-                os.getenv("RPC_URL", ""),
+                self.config_manager.get_selected_network() == "TEST",
+                self.config_manager.get_rpc_url(
+                    self.config_manager.get_selected_network()
+                ),
                 self.logger,
             )
             self.wallet_repo = WalletRepository(self.db_manager, self.logger)
@@ -51,7 +55,9 @@ class DependencyInjection:
                 self.wallet_repo, self.evm_service, self.logger
             )
             self.tx_repo = TransactionRepository(self.db_manager, self.logger)
-            self.tx_uc = TransactionUseCases(self.tx_repo, self.logger)
+            self.tx_uc = TransactionUseCases(
+                self.config_manager, self.evm_service, self.tx_repo, self.logger
+            )
             logger.info("Dependency injection initialized successfully")
             self._initialized = True
 
@@ -107,8 +113,3 @@ class DependencyInjection:
             and self._db_initialized
             and self.db_manager.is_initialized()
         )
-
-    def ensure_database_initialized(self):
-        """Ensure the database is initialized before use."""
-        if not self.is_database_initialized():
-            raise RuntimeError("Database not initialized. Call initialize() first.")

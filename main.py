@@ -5,7 +5,8 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 
-from app import DependencyInjection, RequestLoggerMiddleware, router, setup_loguru
+from app import (DependencyInjection, RequestLoggerMiddleware, router,
+                 setup_loguru)
 
 """
 Main entry point for the application.
@@ -16,6 +17,7 @@ All the application logic is housed in app/*
 
 setup_loguru()
 load_dotenv()
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

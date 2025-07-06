@@ -13,6 +13,7 @@ isort>=6.0.1
 flake8>=7.3.0
 mypy>=1.16.1
 asyncpg-stubs>=0.30.2
+types-PyYAML
 
 # Development tools
 lefthook>=0.19.0

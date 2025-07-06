@@ -26,4 +26,3 @@ def setup_loguru():
 
     logger.remove()
     logger.add(sys.stdout, level="INFO", backtrace=True, diagnose=True)
-

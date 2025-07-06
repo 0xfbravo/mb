@@ -24,7 +24,6 @@ async def create_wallet(
     returning the address, private keys and public keys.
     """
     try:
-        di.ensure_database_initialized()
         di.logger.info("Creating wallet")
         return await di.wallet_uc.create(number_of_wallets)
     except RuntimeError as e:
@@ -51,7 +50,6 @@ async def get_wallets(
     - **limit**: Number of items to return (max 1000)
     """
     try:
-        di.ensure_database_initialized()
         di.logger.info(f"Getting wallets with pagination: page={page}, limit={limit}")
 
         if page < 1:
@@ -86,7 +84,6 @@ async def get_wallet(
     Get wallet information by address.
     """
     try:
-        di.ensure_database_initialized()
         di.logger.info("Getting wallet")
         return await di.wallet_uc.get_by_address(address)
     except RuntimeError as e:
@@ -107,7 +104,6 @@ async def delete_wallet(
     Delete wallet by address.
     """
     try:
-        di.ensure_database_initialized()
         di.logger.info(f"Deleting wallet: {address}")
         return await di.wallet_uc.delete_wallet(address)
     except RuntimeError as e:

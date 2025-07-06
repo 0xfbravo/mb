@@ -1,5 +1,4 @@
 import uuid
-from enum import Enum
 from typing import Any
 
 from asyncpg.exceptions import ConnectionDoesNotExistError
@@ -13,20 +12,17 @@ from app.data.database.errors import (DatabaseConnectionError,
                                       TransactionRetrievalError,
                                       TransactionUpdateError)
 from app.data.database.main import DatabaseManager
-
-
-class TransactionStatus(str, Enum):
-    PENDING = "pending"
-    COMPLETED = "completed"
-    FAILED = "failed"
+from app.domain.transaction.enum import Status
 
 
 class Transaction(Model):
     id = fields.UUIDField(primary_key=True, default=uuid.uuid4)
-    wallet_address = fields.CharField(max_length=255)
+    asset = fields.CharField(max_length=10)
+    network = fields.CharField(max_length=255)
+    from_address = fields.CharField(max_length=255)
+    to_address = fields.CharField(max_length=255)
     amount = fields.FloatField()
-    currency = fields.CharField(max_length=255)
-    status = fields.CharEnumField(enum_type=TransactionStatus)
+    status = fields.CharEnumField(enum_type=Status, default=Status.PENDING)
     gas_price = fields.IntField()
     gas_limit = fields.IntField()
     created_at = fields.DatetimeField(auto_now_add=True)
@@ -42,19 +38,22 @@ class TransactionRepository:
 
     async def create(
         self,
-        wallet_address: str,
+        asset: str,
+        network: str,
+        from_address: str,
+        to_address: str,
         amount: float,
-        currency: str,
         gas_price: int,
         gas_limit: int,
     ) -> Transaction:
         """Create a new transaction."""
         try:
             return await Transaction.create(
-                wallet_address=wallet_address,
+                asset=asset,
+                network=network,
+                from_address=from_address,
+                to_address=to_address,
                 amount=amount,
-                currency=currency,
-                status=TransactionStatus.PENDING,
                 gas_price=gas_price,
                 gas_limit=gas_limit,
             )
@@ -63,7 +62,7 @@ class TransactionRepository:
             raise DatabaseConnectionError("create", e)
         except Exception as e:
             self.logger.error(f"Error creating transaction: {e}")
-            raise TransactionCreationError(wallet_address, amount, currency, e)
+            raise TransactionCreationError(from_address, to_address, asset, amount, e)
 
     async def get_by_id(self, transaction_id: uuid.UUID) -> Transaction:
         """Get transaction by ID."""
@@ -114,9 +113,7 @@ class TransactionRepository:
             self.logger.error(f"Error getting transactions by wallet: {e}")
             raise TransactionRetrievalError("getting by wallet", wallet_address, e)
 
-    async def update_status(
-        self, transaction_id: str, status: TransactionStatus
-    ) -> Transaction:
+    async def update_status(self, transaction_id: str, status: Status) -> Transaction:
         """Update transaction status."""
         try:
             transaction = await Transaction.get(id=transaction_id)

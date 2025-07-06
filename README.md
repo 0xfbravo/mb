@@ -95,6 +95,28 @@ make install
 make run
 ```
 
+## 🌐 EVM Configuration
+
+This application is configured to work with any EVM compatible blockchain.
+
+By default, the application is configured to work with the `TEST` network.
+
+So if you want to use, for example, the `ETHEREUM_SEPOLIA` network, you need to change the `selected` network in the `config.yaml` file to `ETHEREUM_SEPOLIA`.
+
+Also you can configure the assets and networks in the `config.yaml` file, you just need to add the asset and network you want to use.
+
+```yaml
+assets:
+  USDT:
+    native: false
+    ETHEREUM: "0xdac17f958d2ee523a2206206994597c13d831ec7"
+    ARBITRUM: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9"
+    BASE: "0xfde4c96c8593536e31f229ea8f37b2ada2699bb2" # Bridged USDT
+    # ETHEREUM_SEPOLIA: "0x0000000000000000000000000000000000000000" # Unable to find official contract address
+    # ARBITRUM_SEPOLIA: "0x0000000000000000000000000000000000000000" # Unable to find official contract address
+    # BASE_SEPOLIA: "0x0000000000000000000000000000000000000000" # Unable to find official contract address
+```
+
 ## 🏗️ Architecture
 
 The project follows Clean Architecture principles with clear separation of concerns:
@@ -115,40 +137,6 @@ The project follows Clean Architecture principles with clear separation of conce
    - Defines data models and entities split into sub-folders (e.g. `app/domain/wallet/`)
    - Contains domain-specific logic
    - Independent of infrastructure concerns, exclusively responsible for business logic
-
-## 🌐 Web3 Configuration
-
-This application is configured to work with any EVM compatible blockchain.
-
-### 🔗 Connection to a remote node
-
-To connect to a remote node, set the `USE_TEST_PROVIDER` environment variable to `False` and set the `RPC_URL` environment variable to the URL of the remote node. On .env.example we're connection to the **Ethereum Sepolia testnet**.
-```bash
-# Example for Infura
-USE_TEST_PROVIDER=False
-RPC_URL=https://sepolia.infura.io/v3/YOUR_INFURA_PROJECT_ID
-# or
-# Example for Sepolia testnet
-RPC_URL=https://rpc.sepolia.dev
-```
-
-### 🔗 Connection to a test node (Infura)
-
-To connect to a test node, set the `USE_TEST_PROVIDER` environment variable to `True` and the `RPC_URL` will be ignored.
-```bash
-# Example for Infura
-USE_TEST_PROVIDER=True
-RPC_URL=https://sepolia.infura.io/v3/YOUR_INFURA_PROJECT_ID
-```
-
-### 🔗 Connection to a local node
-
-To connect to a local node, set the `USE_TEST_PROVIDER` environment variable to `False` and set the `RPC_URL` as your local node URL.
-```bash
-# Example for Ganache or any other local node
-USE_TEST_PROVIDER=False
-RPC_URL=http://localhost:8545
-```
 
 ## 🗄️ Database Configuration
 

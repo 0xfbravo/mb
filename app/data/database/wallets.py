@@ -1,6 +1,5 @@
 import uuid
 from datetime import datetime
-from enum import Enum
 from typing import Any
 
 from asyncpg.exceptions import ConnectionDoesNotExistError
@@ -13,11 +12,7 @@ from app.data.database.errors import (DatabaseConnectionError,
                                       WalletNotFoundError,
                                       WalletRetrievalError)
 from app.data.database.main import DatabaseManager
-
-
-class WalletStatus(str, Enum):
-    ACTIVE = "active"
-    INACTIVE = "inactive"
+from app.domain.wallet.enum import WalletStatus
 
 
 class Wallet(Model):

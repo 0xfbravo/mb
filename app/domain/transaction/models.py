@@ -4,8 +4,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
 
-from app.data.database import Transaction as DBTransaction
-from app.data.database import TransactionStatus as DBTransactionStatus
+from app.data.database.transactions import Transaction as DBTransaction
+from app.domain.transaction.enum import Status
 
 
 class CreateTx(BaseModel):
@@ -17,6 +17,7 @@ class CreateTx(BaseModel):
     to_address: str = Field(
         ..., min_length=1, description="The address of the receiver"
     )
+    asset: str = Field(..., min_length=1, description="The asset of the transaction")
     amount: float = Field(..., gt=0, description="The amount of the transaction")
 
     @field_validator("from_address")
@@ -38,12 +39,13 @@ class Transaction(BaseModel):
     """Transaction model for blockchain transactions"""
 
     id: Optional[UUID] = None
+    asset: Optional[str] = None
     from_address: Optional[str] = None
     to_address: Optional[str] = None
     amount: Optional[float] = None
     gas_price: Optional[int] = None
     gas_limit: Optional[int] = None
-    status: Optional[DBTransactionStatus] = None
+    status: Optional[Status] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
@@ -52,16 +54,13 @@ class Transaction(BaseModel):
         """Convert a data layer model to a domain layer model"""
         return Transaction(
             id=db_transaction.id,
-            from_address=db_transaction.wallet_address,
-            to_address=db_transaction.wallet_address,
+            asset=db_transaction.asset,
+            from_address=db_transaction.from_address,
+            to_address=db_transaction.to_address,
             amount=db_transaction.amount,
             gas_price=db_transaction.gas_price,
             gas_limit=db_transaction.gas_limit,
-            status=(
-                DBTransactionStatus(db_transaction.status.value)
-                if db_transaction.status
-                else None
-            ),
+            status=db_transaction.status,
             created_at=db_transaction.created_at,
             updated_at=db_transaction.updated_at,
         )

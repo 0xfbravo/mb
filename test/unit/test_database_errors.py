@@ -56,7 +56,7 @@ class TestDatabaseErrors:
     def test_transaction_creation_error(self):
         """Test TransactionCreationError creation and attributes."""
         original_error = Exception("Creation failed")
-        error = TransactionCreationError("0x123", 1.5, "ETH", original_error)
+        error = TransactionCreationError("0x123", "0x456", "ETH", 1.5, original_error)
 
         assert error.entity_type == "Transaction"
         assert error.details == "for wallet 0x123, amount 1.5 ETH"

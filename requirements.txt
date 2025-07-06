@@ -36,6 +36,10 @@ click==8.0.2
     #   uvicorn
 cytoolz==1.0.1
     # via eth-utils
+dnspython==2.7.0
+    # via email-validator
+email-validator==2.2.0
+    # via -r requirements.in
 eth-abi==5.2.0
     # via
     #   eth-account
@@ -87,6 +91,7 @@ httptools==0.6.4
 idna==3.10
     # via
     #   anyio
+    #   email-validator
     #   requests
     #   yarl
 iso8601==2.1.0
@@ -135,7 +140,9 @@ pytz==2025.2
 pyunormalize==16.0.0
     # via web3
 pyyaml==6.0.2
-    # via uvicorn
+    # via
+    #   -r requirements.in
+    #   uvicorn
 regex==2024.11.6
     # via parsimonious
 requests==2.32.4

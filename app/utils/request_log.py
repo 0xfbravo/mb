@@ -2,9 +2,9 @@ import time
 from typing import List
 
 from fastapi import Request
+from loguru import logger
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
-from loguru import logger
 
 MAX_LOG_BODY_SIZE = 1000  # characters
 SENSITIVE_PATHS: List[str] = []
@@ -36,7 +36,9 @@ class RequestLoggerMiddleware(BaseHTTPMiddleware):
 
         logger.info(
             f"➡️ {method} {path}"
-            f"{f'?{query}' if query else ''} | Headers: {headers} | Body: {body}"
+            f"{f'?{query}' if query else ''} "
+            f"Headers: {headers} "
+            f"Body: {body}"
         )
 
         response = await call_next(request)

@@ -106,12 +106,13 @@ class TransactionCreationError(CreationError):
 
     def __init__(
         self,
-        wallet_address: str,
+        from_address: str,
+        to_address: str,
+        asset: str,
         amount: float,
-        currency: str,
         original_error: Exception,
     ):
-        details = f"for wallet {wallet_address}, amount {amount} {currency}"
+        details = f"for wallet {from_address}, amount {amount} {asset}"
         super().__init__("Transaction", details, original_error)
 
 

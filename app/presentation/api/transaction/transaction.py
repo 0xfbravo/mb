@@ -1,10 +1,15 @@
 from typing import Annotated, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
+from app.domain.transaction.errors import (EmptyAddressError,
+                                           EmptyTransactionIdError,
+                                           InvalidAmountError,
+                                           InvalidAssetError, SameAddressError)
 from app.domain.transaction.models import (CreateTx, Transaction,
                                            TransactionsPagination)
+from app.domain.wallet.errors import InvalidPaginationError
 from app.utils.di import DependencyInjection, get_dependency_injection
 
 # Tags
@@ -20,8 +25,20 @@ async def create_tx(
     """
     Create a new transaction.
     """
-    di.ensure_database_initialized()
-    return await di.tx_uc.create(tx)
+    try:
+        di.logger.info(f"Creating transaction: {tx}")
+        return await di.tx_uc.create(tx)
+    except (
+        InvalidAssetError,
+        InvalidAmountError,
+        SameAddressError,
+        EmptyAddressError,
+    ) as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database not initialized")
+    except Exception:
+        raise HTTPException(status_code=500, detail="Unexpected error")
 
 
 @router.get("/", tags=[transaction_tag])
@@ -61,13 +78,19 @@ async def get_transactions(
     Only one filter should be used at a time. If multiple filters are provided,
     the priority order is: transaction_id > tx_hash > wallet_address > pagination.
     """
-    di.ensure_database_initialized()
-
-    if transaction_id:
-        return await di.tx_uc.get_by_id(transaction_id)
-    elif tx_hash:
-        return await di.tx_uc.get_by_tx_hash(tx_hash)
-    elif wallet_address:
-        return await di.tx_uc.get_txs(wallet_address)
-    else:
-        return await di.tx_uc.get_all(page=page, limit=limit)
+    try:
+        di.logger.info("Getting transactions with filters")
+        if transaction_id:
+            return await di.tx_uc.get_by_id(transaction_id)
+        elif tx_hash:
+            return await di.tx_uc.get_by_tx_hash(tx_hash)
+        elif wallet_address:
+            return await di.tx_uc.get_txs(wallet_address)
+        else:
+            return await di.tx_uc.get_all(page=page, limit=limit)
+    except (InvalidPaginationError, EmptyAddressError, EmptyTransactionIdError) as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database not initialized")
+    except Exception:
+        raise HTTPException(status_code=500, detail="Unexpected error")
