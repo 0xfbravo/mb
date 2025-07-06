@@ -235,17 +235,41 @@ class EVMService:
         Returns:
             The transaction receipt.
         """
-        # Convert string to HexBytes if needed
-        if isinstance(transaction_hash, str):
-            transaction_hash = HexBytes(transaction_hash)
 
-        self.logger.info(f"Getting transaction receipt for {transaction_hash.hex()}")
-        receipt = self.w3.eth.get_transaction_receipt(transaction_hash)
-        if receipt is None:
-            self.logger.error(f"Transaction receipt not found for {transaction_hash}")
-            raise RuntimeError("Transaction receipt not found")
-        self.logger.info(f"Transaction receipt found: {receipt}")
-        return receipt
+        # Convert transaction_hash to HexBytes if it's a string or bytes
+        if isinstance(transaction_hash, str):
+            hash_for_logging = transaction_hash
+            hash_for_web3 = HexBytes(transaction_hash)
+        elif isinstance(transaction_hash, bytes):
+            hash_for_logging = transaction_hash.hex()
+            hash_for_web3 = HexBytes(transaction_hash)
+        else:
+            # Assume it's already a HexBytes or similar object
+            hash_for_logging = transaction_hash.hex()
+            hash_for_web3 = transaction_hash
+
+        self.logger.info(f"Getting transaction receipt for {hash_for_logging}")
+        try:
+            receipt = self.w3.eth.get_transaction_receipt(hash_for_web3)
+            if receipt is None:
+                self.logger.error(
+                    f"Transaction receipt not found for {hash_for_logging}"
+                )
+                raise RuntimeError("Transaction receipt not found")
+            self.logger.info(f"Transaction receipt found: {receipt}")
+            return receipt
+        except Exception as e:
+            # Handle Web3 exceptions and convert to RuntimeError
+            if (
+                "not found" in str(e).lower()
+                or "transactionnotfound" in str(type(e).__name__).lower()
+            ):
+                self.logger.error(
+                    f"Transaction receipt not found for {hash_for_logging}"
+                )
+                raise RuntimeError("Transaction receipt not found")
+            # Re-raise other exceptions
+            raise
 
     # Get the nonce of a wallet
     def get_nonce(self, wallet_address: HexAddress) -> int:

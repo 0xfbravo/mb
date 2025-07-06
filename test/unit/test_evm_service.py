@@ -441,6 +441,7 @@ class TestEVMService:
             "0x1234567890123456789012345678901234567890123456789012345678901234"
         )
 
+        # Test case 1: Web3 returns None
         mock_web3.eth.get_transaction_receipt.return_value = None
 
         with pytest.raises(RuntimeError, match="Transaction receipt not found"):
@@ -449,6 +450,19 @@ class TestEVMService:
         mock_web3.eth.get_transaction_receipt.assert_called_once_with(
             HexBytes(transaction_hash)
         )
+
+        # Test case 2: Web3 raises TransactionNotFound exception
+        from web3.exceptions import TransactionNotFound
+
+        mock_web3.eth.get_transaction_receipt.side_effect = TransactionNotFound(
+            "Transaction not found"
+        )
+
+        with pytest.raises(RuntimeError, match="Transaction receipt not found"):
+            evm_service.get_transaction_receipt(transaction_hash)
+
+        # Reset the side effect for other tests
+        mock_web3.eth.get_transaction_receipt.side_effect = None
 
     def test_get_transaction_receipt_with_different_hash(self, evm_service, mock_web3):
         """Test getting transaction receipt with a different hash format."""
@@ -467,6 +481,257 @@ class TestEVMService:
         mock_web3.eth.get_transaction_receipt.assert_called_once_with(
             HexBytes(transaction_hash)
         )
+
+    def test_get_nonce_success(self, evm_service, mock_web3):
+        """Test getting nonce for a wallet successfully."""
+        wallet_address = "0x1234567890123456789012345678901234567890"
+        expected_nonce = 5
+
+        mock_web3.eth.get_transaction_count.return_value = expected_nonce
+
+        result = evm_service.get_nonce(wallet_address)
+
+        assert result == expected_nonce
+        mock_web3.eth.get_transaction_count.assert_called_once_with(
+            mock_web3.to_checksum_address.return_value
+        )
+        mock_web3.to_checksum_address.assert_called_once_with(wallet_address)
+
+    def test_get_nonce_zero(self, evm_service, mock_web3):
+        """Test getting nonce when it's zero."""
+        wallet_address = "0x1234567890123456789012345678901234567890"
+        expected_nonce = 0
+
+        mock_web3.eth.get_transaction_count.return_value = expected_nonce
+
+        result = evm_service.get_nonce(wallet_address)
+
+        assert result == expected_nonce
+
+    def test_get_nonce_high_value(self, evm_service, mock_web3):
+        """Test getting nonce with a high value."""
+        wallet_address = "0x1234567890123456789012345678901234567890"
+        expected_nonce = 999999
+
+        mock_web3.eth.get_transaction_count.return_value = expected_nonce
+
+        result = evm_service.get_nonce(wallet_address)
+
+        assert result == expected_nonce
+
+    def test_get_token_contract_success(self, evm_service, mock_web3):
+        """Test getting token contract successfully."""
+        token_address = "0xabcdef1234567890abcdef1234567890abcdef12"
+        abi_name = "erc20"
+        sample_abi = [{"name": "balanceOf", "type": "function"}]
+
+        evm_service.abis[abi_name] = sample_abi
+        mock_contract = MagicMock()
+        mock_web3.eth.contract.return_value = mock_contract
+
+        result = evm_service.get_token_contract(token_address, abi_name)
+
+        assert result == mock_contract
+        mock_web3.eth.contract.assert_called_once_with(
+            address=mock_web3.to_checksum_address.return_value, abi=sample_abi
+        )
+        mock_web3.to_checksum_address.assert_called_once_with(token_address)
+
+    def test_get_token_contract_with_default_abi(self, evm_service, mock_web3):
+        """Test getting token contract with default ABI."""
+        token_address = "0xabcdef1234567890abcdef1234567890abcdef12"
+        sample_abi = [{"name": "balanceOf", "type": "function"}]
+
+        evm_service.abis["erc20"] = sample_abi
+        mock_contract = MagicMock()
+        mock_web3.eth.contract.return_value = mock_contract
+
+        result = evm_service.get_token_contract(token_address)
+
+        assert result == mock_contract
+        mock_web3.eth.contract.assert_called_once_with(
+            address=mock_web3.to_checksum_address.return_value, abi=sample_abi
+        )
+
+    def test_get_token_contract_abi_not_found(self, evm_service):
+        """Test getting token contract with non-existent ABI."""
+        token_address = "0xabcdef1234567890abcdef1234567890abcdef12"
+        abi_name = "non_existent_abi"
+
+        with pytest.raises(KeyError, match=f"ABI '{abi_name}' not found"):
+            evm_service.get_token_contract(token_address, abi_name)
+
+    def test_init_with_http_provider(self, mock_logger):
+        """Test EVMService initialization with HTTP provider."""
+        with patch("app.data.evm.main.Web3") as mock_web3_class:
+            mock_web3 = MagicMock()
+            mock_web3_class.return_value = mock_web3
+            mock_http_provider = MagicMock()
+            mock_web3_class.HTTPProvider.return_value = mock_http_provider
+
+            service = EVMService(False, "http://real-rpc-url", mock_logger)
+
+            assert service.w3 == mock_web3
+            mock_web3_class.HTTPProvider.assert_called_once_with("http://real-rpc-url")
+
+    def test_init_with_test_provider(self, mock_logger):
+        """Test EVMService initialization with test provider."""
+        with patch("app.data.evm.main.Web3") as mock_web3_class:
+            with patch(
+                "app.data.evm.main.EthereumTesterProvider"
+            ) as mock_test_provider:
+                mock_web3 = MagicMock()
+                mock_web3_class.return_value = mock_web3
+                mock_test_provider_instance = MagicMock()
+                mock_test_provider.return_value = mock_test_provider_instance
+
+                service = EVMService(True, "http://test-rpc-url", mock_logger)
+
+                assert service.w3 == mock_web3
+                mock_test_provider.assert_called_once()
+
+    def test_get_wallet_balance_with_checksum_address(self, evm_service, mock_web3):
+        """Test getting wallet balance with checksum address conversion."""
+        wallet_address = "0x1234567890123456789012345678901234567890"
+        checksum_address = "0x1234567890123456789012345678901234567890"
+        balance_wei = 1500000000000000000  # 1.5 ETH
+
+        mock_web3.to_checksum_address.return_value = checksum_address
+        mock_web3.eth.get_balance.return_value = balance_wei
+
+        result = evm_service.get_wallet_balance(wallet_address)
+
+        assert result == 1.5
+        mock_web3.to_checksum_address.assert_called_once_with(wallet_address)
+        mock_web3.eth.get_balance.assert_called_once_with(checksum_address)
+
+    def test_get_token_balance_with_checksum_address(self, evm_service, mock_web3):
+        """Test getting token balance with checksum address conversion."""
+        wallet_address = "0x1234567890123456789012345678901234567890"
+        token_address = "0xabcdef1234567890abcdef1234567890abcdef12"
+        checksum_token = "0xabcdef1234567890abcdef1234567890abcdef12"
+        balance_raw = 1000000000000000000  # 1 token
+
+        evm_service.abis["erc20"] = [{"name": "balanceOf", "type": "function"}]
+
+        mock_web3.to_checksum_address.return_value = checksum_token
+        mock_contract = MagicMock()
+        mock_contract.functions.balanceOf.return_value.call.return_value = balance_raw
+        mock_web3.eth.contract.return_value = mock_contract
+
+        result = evm_service.get_token_balance(wallet_address, token_address)
+
+        assert result == 1.0
+        assert mock_web3.to_checksum_address.call_count == 1
+        mock_web3.to_checksum_address.assert_called_once_with(token_address)
+
+    def test_sign_transaction_with_invalid_private_key(self, evm_service, mock_web3):
+        """Test signing transaction with invalid private key."""
+        tx_params = {"to": "0x123", "value": 1000, "gas": 21000}
+        invalid_private_key = "invalid_key"
+
+        mock_web3.eth.account.sign_transaction.side_effect = Exception(
+            "Invalid private key"
+        )
+
+        with pytest.raises(Exception, match="Invalid private key"):
+            evm_service.sign_transaction(tx_params, invalid_private_key)
+
+    def test_send_transaction_with_invalid_transaction(self, evm_service, mock_web3):
+        """Test sending transaction with invalid transaction data."""
+        invalid_tx = {"invalid": "data"}
+        private_key = "0x1234567890abcdef"
+
+        mock_web3.eth.account.sign_transaction.side_effect = Exception(
+            "Invalid transaction"
+        )
+
+        with pytest.raises(Exception, match="Invalid transaction"):
+            evm_service.send_transaction(invalid_tx, private_key)
+
+    def test_get_transaction_receipt_with_hexbytes_input(self, evm_service, mock_web3):
+        """Test getting transaction receipt with HexBytes input."""
+        transaction_hash = HexBytes(
+            "0x1234567890123456789012345678901234567890123456789012345678901234"
+        )
+
+        mock_receipt = MagicMock(spec=TxReceipt)
+        mock_receipt.transactionHash = transaction_hash
+        mock_receipt.status = 1
+        mock_web3.eth.get_transaction_receipt.return_value = mock_receipt
+
+        result = evm_service.get_transaction_receipt(transaction_hash)
+
+        assert result == mock_receipt
+        mock_web3.eth.get_transaction_receipt.assert_called_once_with(transaction_hash)
+
+    def test_get_transaction_receipt_with_bytes_input(self, evm_service, mock_web3):
+        """Test getting transaction receipt with bytes input."""
+        transaction_hash = b"\x12\x34\x56\x78\x90\x12\x34\x56\x78\x90\x12\x34\x56\x78\x90\x12\x34\x56\x78\x90\x12\x34\x56\x78\x90\x12\x34\x56\x78\x90\x12\x34\x56\x78"
+
+        mock_receipt = MagicMock(spec=TxReceipt)
+        mock_receipt.transactionHash = transaction_hash
+        mock_receipt.status = 1
+        mock_web3.eth.get_transaction_receipt.return_value = mock_receipt
+
+        result = evm_service.get_transaction_receipt(transaction_hash)
+
+        assert result == mock_receipt
+        mock_web3.eth.get_transaction_receipt.assert_called_once_with(
+            HexBytes(transaction_hash)
+        )
+
+    def test_create_wallet_with_web3_error(self, evm_service, mock_web3):
+        """Test wallet creation when Web3 account creation fails."""
+        mock_web3.eth.account.create.side_effect = Exception("Web3 error")
+
+        with pytest.raises(Exception, match="Web3 error"):
+            evm_service.create_wallet()
+
+    def test_get_wallet_balance_with_web3_error(self, evm_service, mock_web3):
+        """Test getting wallet balance when Web3 call fails."""
+        wallet_address = "0x1234567890123456789012345678901234567890"
+        mock_web3.eth.get_balance.side_effect = Exception("Network error")
+
+        with pytest.raises(Exception, match="Network error"):
+            evm_service.get_wallet_balance(wallet_address)
+
+    def test_get_nonce_with_web3_error(self, evm_service, mock_web3):
+        """Test getting nonce when Web3 call fails."""
+        wallet_address = "0x1234567890123456789012345678901234567890"
+        mock_web3.eth.get_transaction_count.side_effect = Exception("Network error")
+
+        with pytest.raises(Exception, match="Network error"):
+            evm_service.get_nonce(wallet_address)
+
+    def test_get_token_balance_with_contract_error(self, evm_service, mock_web3):
+        """Test getting token balance when contract call fails."""
+        wallet_address = "0x1234567890123456789012345678901234567890"
+        token_address = "0xabcdef1234567890abcdef1234567890abcdef12"
+
+        evm_service.abis["erc20"] = [{"name": "balanceOf", "type": "function"}]
+
+        mock_contract = MagicMock()
+        mock_contract.functions.balanceOf.return_value.call.side_effect = Exception(
+            "Contract error"
+        )
+        mock_web3.eth.contract.return_value = mock_contract
+
+        with pytest.raises(Exception, match="Contract error"):
+            evm_service.get_token_balance(wallet_address, token_address)
+
+    def test_send_transaction_with_network_error(self, evm_service, mock_web3):
+        """Test sending transaction when network call fails."""
+        tx_params = {"to": "0x123", "value": 1000, "gas": 21000}
+        private_key = "0x1234567890abcdef"
+
+        mock_signed_tx = MagicMock(spec=SignedTransaction)
+        mock_signed_tx.raw_transaction = b"raw_transaction_bytes"
+        mock_web3.eth.account.sign_transaction.return_value = mock_signed_tx
+        mock_web3.eth.send_raw_transaction.side_effect = Exception("Network error")
+
+        with pytest.raises(Exception, match="Network error"):
+            evm_service.send_transaction(tx_params, private_key)
 
 
 class TestEVMServiceIntegration:

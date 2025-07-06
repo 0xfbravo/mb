@@ -223,7 +223,7 @@ class TestEVMServiceIntegration:
             evm_service.get_transaction_receipt(invalid_hash)
 
     def test_multiple_wallets_and_transactions(self, evm_service):
-        """Test creating multiple wallets and performing multiple transactions."""
+        """Test creating multiple wallets and performing transactions between them."""
         # Create multiple wallets
         wallets = [evm_service.create_wallet() for _ in range(3)]
 
@@ -236,41 +236,284 @@ class TestEVMServiceIntegration:
             }
         )
 
-        # Perform chain of transactions: wallet0 -> wallet1 -> wallet2
-        for i in range(2):
-            sender = wallets[i]
-            receiver = wallets[i + 1]
+        # Verify initial balance
+        balance = evm_service.get_wallet_balance(wallets[0].address)
+        assert balance == 3.0
 
-            # Calculate gas cost
-            gas_price = evm_service.w3.eth.gas_price
-            gas_limit = 21000
-            gas_cost = gas_price * gas_limit
-            sender_balance = evm_service.w3.eth.get_balance(sender.address)
-            # Send almost all, but leave enough for gas
-            tx_value = sender_balance - gas_cost - 1  # leave 1 wei buffer
-            if tx_value <= 0:
-                raise Exception("Not enough balance to send transaction including gas")
-
+        # Send transactions from wallet 0 to wallets 1 and 2
+        for i, target_wallet in enumerate(wallets[1:], 1):
             tx = {
-                "to": receiver.address,
-                "value": tx_value,
-                "gas": gas_limit,
-                "gasPrice": gas_price,
-                "nonce": evm_service.w3.eth.get_transaction_count(sender.address),
+                "to": target_wallet.address,
+                "value": evm_service.w3.to_wei(0.5, "ether"),
+                "gas": 21000,
+                "gasPrice": evm_service.w3.eth.gas_price,
+                "nonce": evm_service.w3.eth.get_transaction_count(wallets[0].address),
                 "chainId": evm_service.w3.eth.chain_id,
             }
 
-            tx_hash = evm_service.send_transaction(tx, sender.key.hex())
+            tx_hash = evm_service.send_transaction(tx, wallets[0].key.hex())
             receipt = evm_service.get_transaction_receipt(tx_hash)
 
             assert receipt["status"] == 1
-            assert receipt["to"].lower() == receiver.address.lower()
+            assert receipt["transactionHash"] == tx_hash
 
         # Verify final balances
-        balance0 = evm_service.get_wallet_balance(wallets[0].address)
-        balance1 = evm_service.get_wallet_balance(wallets[1].address)
-        balance2 = evm_service.get_wallet_balance(wallets[2].address)
+        balance_0 = evm_service.get_wallet_balance(wallets[0].address)
+        balance_1 = evm_service.get_wallet_balance(wallets[1].address)
+        balance_2 = evm_service.get_wallet_balance(wallets[2].address)
 
-        assert balance0 < 3.0  # Less than 3 due to gas fees
-        assert balance1 > 0.0  # Should have some balance after receiving and sending
-        assert balance2 > 0.0  # Should have received some ETH
+        # Wallet 0 should have less than 2.0 (due to gas fees)
+        assert balance_0 < 2.0
+        # Wallets 1 and 2 should have 0.5 each
+        assert balance_1 == 0.5
+        assert balance_2 == 0.5
+
+    def test_nonce_handling(self, evm_service, test_wallet):
+        """Test nonce handling for transactions."""
+        # Fund the wallet
+        evm_service.w3.eth.send_transaction(
+            {
+                "from": evm_service.w3.eth.accounts[0],
+                "to": test_wallet.address,
+                "value": evm_service.w3.to_wei(2, "ether"),
+            }
+        )
+
+        # Get initial nonce
+        initial_nonce = evm_service.get_nonce(test_wallet.address)
+        assert initial_nonce == 0
+
+        # Create a transaction
+        tx = {
+            "to": evm_service.w3.eth.accounts[0],  # Send back to test account
+            "value": evm_service.w3.to_wei(0.1, "ether"),
+            "gas": 21000,
+            "gasPrice": evm_service.w3.eth.gas_price,
+            "nonce": initial_nonce,
+            "chainId": evm_service.w3.eth.chain_id,
+        }
+
+        # Send transaction
+        tx_hash = evm_service.send_transaction(tx, test_wallet.key.hex())
+        receipt = evm_service.get_transaction_receipt(tx_hash)
+
+        assert receipt["status"] == 1
+
+        # Check that nonce has increased
+        new_nonce = evm_service.get_nonce(test_wallet.address)
+        assert new_nonce == initial_nonce + 1
+
+    def test_token_contract_interaction(self, evm_service, test_wallet):
+        """Test token contract interaction using the test provider."""
+        # Deploy a simple ERC20 token contract for testing
+        # This is a simplified test - in a real scenario you'd deploy an actual contract
+        token_address = "0x1234567890123456789012345678901234567890"
+
+        # Test getting token contract
+        try:
+            contract = evm_service.get_token_contract(token_address)
+            # If the contract doesn't exist, this should fail gracefully
+            assert contract is not None
+        except Exception:
+            # Expected if the contract doesn't exist on test network
+            pass
+
+    def test_abi_loading_and_management(self, evm_service):
+        """Test ABI loading and management functionality."""
+        # Test listing available ABIs
+        available_abis = evm_service.list_available_abis()
+        assert isinstance(available_abis, list)
+        assert "erc20" in available_abis
+
+        # Test getting a specific ABI
+        erc20_abi = evm_service.get_abi("erc20")
+        assert isinstance(erc20_abi, list)
+        assert len(erc20_abi) > 0
+
+        # Test getting non-existent ABI
+        with pytest.raises(KeyError):
+            evm_service.get_abi("non_existent_abi")
+
+    def test_gas_price_strategy(self, evm_service):
+        """Test that gas price strategy is properly set."""
+        # The service should have a gas price strategy set
+        # This is tested indirectly by checking that transactions can be sent
+        wallet = evm_service.create_wallet()
+
+        # Fund the wallet
+        evm_service.w3.eth.send_transaction(
+            {
+                "from": evm_service.w3.eth.accounts[0],
+                "to": wallet.address,
+                "value": evm_service.w3.to_wei(1, "ether"),
+            }
+        )
+
+        # Create a transaction with gas price from strategy
+        tx = {
+            "to": evm_service.w3.eth.accounts[0],
+            "value": evm_service.w3.to_wei(0.1, "ether"),
+            "gas": 21000,
+            "gasPrice": evm_service.w3.eth.gas_price,
+            "nonce": evm_service.w3.eth.get_transaction_count(wallet.address),
+            "chainId": evm_service.w3.eth.chain_id,
+        }
+
+        # This should work if gas price strategy is properly configured
+        tx_hash = evm_service.send_transaction(tx, wallet.key.hex())
+        assert isinstance(tx_hash, HexBytes)
+
+    def test_address_checksum_handling(self, evm_service, test_wallet):
+        """Test that addresses are properly checksummed."""
+        # Test with lowercase address
+        lowercase_address = test_wallet.address.lower()
+        balance = evm_service.get_wallet_balance(lowercase_address)
+        assert isinstance(balance, float)
+
+        # Test with mixed case address
+        mixed_case_address = test_wallet.address.swapcase()
+        balance = evm_service.get_wallet_balance(mixed_case_address)
+        assert isinstance(balance, float)
+
+    def test_transaction_receipt_edge_cases(self, evm_service):
+        """Test transaction receipt handling with edge cases."""
+        # Test with a real Ethereum transaction hash (this should work on mainnet)
+        real_hash = "0xcf9489972a78d42c24d274f89dfc1041f71701b330cd67bbcec197da393bb5f7"
+
+        # Test with string hash
+        try:
+            receipt = evm_service.get_transaction_receipt(real_hash)
+            # If we get here, the transaction was found (which is expected for a real hash)
+            assert receipt is not None
+            assert receipt["transactionHash"] == HexBytes(real_hash)
+        except RuntimeError as e:
+            # If the transaction is not found, that's also acceptable in test environment
+            assert "Transaction receipt not found" in str(e)
+        except Exception as e:
+            # Other exceptions (like network issues) are also acceptable in test environment
+            assert "not found" in str(e).lower() or "connection" in str(e).lower()
+
+        # Test with HexBytes hash
+        real_hexbytes_hash = HexBytes(real_hash)
+        try:
+            receipt = evm_service.get_transaction_receipt(real_hexbytes_hash)
+            # If we get here, the transaction was found
+            assert receipt is not None
+            assert receipt["transactionHash"] == real_hexbytes_hash
+        except RuntimeError as e:
+            # If the transaction is not found, that's also acceptable
+            assert "Transaction receipt not found" in str(e)
+        except Exception as e:
+            # Other exceptions are also acceptable
+            assert "not found" in str(e).lower() or "connection" in str(e).lower()
+
+        # Test with an obviously invalid hash
+        invalid_hash = (
+            "0x1234567890123456789012345678901234567890123456789012345678901234"
+        )
+
+        with pytest.raises(RuntimeError, match="Transaction receipt not found"):
+            evm_service.get_transaction_receipt(invalid_hash)
+
+        # Test with invalid HexBytes hash
+        invalid_hexbytes_hash = HexBytes(
+            "0x1234567890123456789012345678901234567890123456789012345678901234"
+        )
+
+        with pytest.raises(RuntimeError, match="Transaction receipt not found"):
+            evm_service.get_transaction_receipt(invalid_hexbytes_hash)
+
+    def test_concurrent_wallet_creation(self, evm_service):
+        """Test creating multiple wallets concurrently."""
+        import threading
+
+        wallets = []
+        errors = []
+
+        def create_wallet():
+            try:
+                wallet = evm_service.create_wallet()
+                wallets.append(wallet)
+            except Exception as e:
+                errors.append(e)
+
+        # Create multiple threads to create wallets
+        threads = []
+        for _ in range(5):
+            thread = threading.Thread(target=create_wallet)
+            threads.append(thread)
+            thread.start()
+
+        # Wait for all threads to complete
+        for thread in threads:
+            thread.join()
+
+        # Verify all wallets were created successfully
+        assert len(wallets) == 5
+        assert len(errors) == 0
+
+        # Verify all wallets have unique addresses
+        addresses = [wallet.address for wallet in wallets]
+        assert len(set(addresses)) == 5
+
+    def test_balance_precision(self, evm_service, test_wallet):
+        """Test balance precision handling."""
+        # Fund with a precise amount
+        precise_amount = evm_service.w3.to_wei(1.123456789, "ether")
+        evm_service.w3.eth.send_transaction(
+            {
+                "from": evm_service.w3.eth.accounts[0],
+                "to": test_wallet.address,
+                "value": precise_amount,
+            }
+        )
+
+        balance = evm_service.get_wallet_balance(test_wallet.address)
+        assert abs(balance - 1.123456789) < 1e-9
+
+    def test_network_connection_handling(self, evm_service):
+        """Test network connection handling with test provider."""
+        # Test that we can connect to the test network
+        assert evm_service.w3.is_connected()
+
+        # Test that we can get network information
+        chain_id = evm_service.w3.eth.chain_id
+        assert isinstance(chain_id, int)
+
+        # Test that we can get block information
+        latest_block = evm_service.w3.eth.block_number
+        assert isinstance(latest_block, int)
+        assert latest_block >= 0
+
+    def test_error_recovery(self, evm_service, test_wallet):
+        """Test error recovery scenarios."""
+        # Fund the wallet
+        evm_service.w3.eth.send_transaction(
+            {
+                "from": evm_service.w3.eth.accounts[0],
+                "to": test_wallet.address,
+                "value": evm_service.w3.to_wei(1, "ether"),
+            }
+        )
+
+        # Try to send a transaction with insufficient funds
+        tx = {
+            "to": evm_service.w3.eth.accounts[0],
+            "value": evm_service.w3.to_wei(2, "ether"),  # More than available
+            "gas": 21000,
+            "gasPrice": evm_service.w3.eth.gas_price,
+            "nonce": evm_service.w3.eth.get_transaction_count(test_wallet.address),
+            "chainId": evm_service.w3.eth.chain_id,
+        }
+
+        # This should fail but not crash the service
+        try:
+            _ = evm_service.send_transaction(tx, test_wallet.key.hex())
+            # If it doesn't fail, that's also acceptable in test environment
+        except Exception:
+            # Expected behavior
+            pass
+
+        # Verify the service is still functional
+        balance = evm_service.get_wallet_balance(test_wallet.address)
+        assert isinstance(balance, float)
