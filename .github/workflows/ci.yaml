@@ -60,6 +60,11 @@ jobs:
           pip install -r requirements-dev.txt
         continue-on-error: false
 
+      # Copy .env.example to .env
+      - name: 📝 Copy .env.example to .env
+        run: |
+          cp .env.example .env
+
       # Run linting
       - name: 🔍 Run linting
         run: |
