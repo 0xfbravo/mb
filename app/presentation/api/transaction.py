@@ -9,13 +9,47 @@ from app.domain.errors import (EmptyAddressError, EmptyTransactionIdError,
                                InvalidTxAssetError,
                                InvalidWalletPrivateKeyError, SameAddressError,
                                WalletNotFoundError)
-from app.domain.tx_models import CreateTx, Transaction, TransactionsPagination
+from app.domain.tx_models import (CreateTx, Transaction,
+                                  TransactionsPagination,
+                                  TransactionValidation)
 from app.utils.di import DependencyInjection, get_dependency_injection
 
 # Tags
 transaction_tag = "💰 Transaction"
 
 router = APIRouter(prefix="/tx", tags=[transaction_tag])
+
+
+@router.post("/validate", tags=[transaction_tag])
+async def validate_transaction(
+    tx_hash: str, di: Annotated[DependencyInjection, Depends(get_dependency_injection)]
+) -> TransactionValidation:
+    """
+    Validate a transaction hash to determine if it's safe for credit generation.
+
+    This endpoint:
+    1. Fetches the transaction from the blockchain
+    2. Identifies if it's an ETH or ERC-20 transfer
+    3. Validates if the destination address is one of our generated addresses
+    4. Returns validation results and transfer details
+    5. Stores valid transactions in the database
+
+    Args:
+        tx_hash: The transaction hash to validate
+
+    Returns:
+        TransactionValidation object with validation results and transfer details
+    """
+    try:
+        di.logger.info(f"Validating transaction: {tx_hash}")
+        return await di.tx_uc.validate_transaction(tx_hash)
+    except EmptyAddressError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="Database not initialized")
+    except Exception as e:
+        di.logger.error(f"Unexpected error validating transaction: {e}")
+        raise HTTPException(status_code=500, detail="Unexpected error")
 
 
 @router.post("/", tags=[transaction_tag])

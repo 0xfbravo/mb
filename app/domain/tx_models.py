@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 from uuid import UUID
 
 from eth_typing import HexAddress
@@ -47,6 +47,36 @@ class CreateTx(BaseModel):
         if not v or v.strip() == "":
             raise ValueError("to_address cannot be empty")
         return v
+
+
+class TransferInfo(BaseModel):
+    """Model for transfer information extracted from transaction"""
+
+    asset: str = Field(..., description="The asset being transferred (ETH, USDC, etc.)")
+    destination_address: str = Field(..., description="The destination address")
+    amount: float = Field(..., description="The amount transferred in decimal format")
+    token_address: Optional[str] = Field(
+        None, description="Token contract address for ERC-20 transfers"
+    )
+
+
+class TransactionValidation(BaseModel):
+    """Model for transaction validation response"""
+
+    is_valid: bool = Field(
+        ...,
+        description="Whether the transaction is valid and safe for credit generation",
+    )
+    transaction_hash: str = Field(
+        ..., description="The transaction hash being validated"
+    )
+    transfers: List[TransferInfo] = Field(
+        ..., description="List of transfers identified in the transaction"
+    )
+    validation_message: str = Field(
+        ..., description="Human-readable validation message"
+    )
+    network: str = Field(..., description="The network where the transaction occurred")
 
 
 class Transaction(BaseModel):
@@ -98,7 +128,7 @@ class Transaction(BaseModel):
 
 
 class TransactionsPagination(BaseModel):
-    """Transactions pagination model"""
+    """Model for paginated transactions response"""
 
+    transactions: List[Transaction]
     pagination: Pagination
-    transactions: list[Transaction]

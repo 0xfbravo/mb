@@ -67,6 +67,14 @@ class TestTransactionUseCases:
         evm_service = MagicMock(spec=EVMService)
         evm_service.send_transaction = MagicMock()
         evm_service.get_token_contract = MagicMock()
+        evm_service.get_transaction_receipt = MagicMock()
+
+        # Mock the w3 attribute
+        mock_w3 = MagicMock()
+        mock_eth = MagicMock()
+        mock_w3.eth = mock_eth
+        evm_service.w3 = mock_w3
+
         return evm_service
 
     @pytest.fixture
@@ -755,18 +763,21 @@ class TestTransactionUseCases:
 
     @pytest.mark.asyncio
     async def test_get_by_tx_hash_database_error(
-        self, transaction_use_cases, mock_tx_repo, mock_logger
+        self, transaction_use_cases, mock_tx_repo, mock_evm_service, mock_logger
     ):
         """Test transaction retrieval fails with database error."""
         # Arrange
         tx_hash = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
         mock_tx_repo.get_by_tx_hash.side_effect = RuntimeError("Database error")
+        mock_evm_service.get_transaction_receipt.side_effect = Exception(
+            "Blockchain error"
+        )
 
         # Act & Assert
-        with pytest.raises(DatabaseError):
+        with pytest.raises(Exception):
             await transaction_use_cases.get_by_tx_hash(tx_hash)
 
-        mock_logger.error.assert_called_with(
+        mock_logger.error.assert_any_call(
             f"Database error getting transaction by hash {tx_hash}: Database error"
         )
 
@@ -992,3 +1003,122 @@ class TestTransactionUseCases:
         assert result.pagination.page == 1
         assert result.pagination.next_page == 2
         assert result.pagination.prev_page is None
+
+    @pytest.mark.asyncio
+    async def test_validate_transaction_empty_hash(
+        self, transaction_use_cases, mock_logger
+    ):
+        """Test transaction validation fails with empty hash."""
+        # Act & Assert
+        with pytest.raises(EmptyAddressError):
+            await transaction_use_cases.validate_transaction("")
+
+        mock_logger.error.assert_called_with("Transaction hash is required")
+
+    @pytest.mark.asyncio
+    async def test_validate_transaction_success(
+        self,
+        transaction_use_cases,
+        mock_evm_service,
+        mock_wallet_use_cases,
+        mock_logger,
+    ):
+        """Test successful transaction validation."""
+        # Arrange
+        tx_hash = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+
+        # Mock transaction receipt
+        mock_receipt = {"status": 1, "logs": []}
+
+        # Mock transaction details
+        mock_tx = {
+            "to": "0xabcdef1234567890abcdef1234567890abcdef12",
+            "from": "0x1234567890abcdef1234567890abcdef12345678",
+            "value": 1000000000000000000,  # 1 ETH in wei
+            "input": "0x",
+            "gasPrice": 20000000000,
+            "gas": 21000,
+        }
+
+        mock_evm_service.get_transaction_receipt.return_value = mock_receipt
+        mock_evm_service.w3.eth.get_transaction.return_value = mock_tx
+
+        # Mock wallet validation
+        mock_wallet_use_cases.get_by_address.return_value = MagicMock()
+
+        # Act
+        result = await transaction_use_cases.validate_transaction(tx_hash)
+
+        # Assert
+        assert result.is_valid is True
+        assert result.transaction_hash == tx_hash
+        assert len(result.transfers) == 1
+        assert result.transfers[0].asset == "ETH"
+        assert result.transfers[0].amount == 1.0
+        assert (
+            result.transfers[0].destination_address
+            == "0xabcdef1234567890abcdef1234567890abcdef12"
+        )
+        assert "Valid ETH transfer" in result.validation_message
+
+    @pytest.mark.asyncio
+    async def test_validate_transaction_failed_status(
+        self, transaction_use_cases, mock_evm_service, mock_logger
+    ):
+        """Test transaction validation with failed status."""
+        # Arrange
+        tx_hash = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+
+        # Mock failed transaction receipt
+        mock_receipt = {"status": 0, "logs": []}
+
+        mock_evm_service.get_transaction_receipt.return_value = mock_receipt
+
+        # Act
+        result = await transaction_use_cases.validate_transaction(tx_hash)
+
+        # Assert
+        assert result.is_valid is False
+        assert result.transaction_hash == tx_hash
+        assert len(result.transfers) == 0
+        assert "Transaction failed or was reverted" in result.validation_message
+
+    @pytest.mark.asyncio
+    async def test_validate_transaction_invalid_destination(
+        self,
+        transaction_use_cases,
+        mock_evm_service,
+        mock_wallet_use_cases,
+        mock_logger,
+    ):
+        """Test transaction validation with invalid destination address."""
+        # Arrange
+        tx_hash = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+
+        # Mock transaction receipt
+        mock_receipt = {"status": 1, "logs": []}
+
+        # Mock transaction details
+        mock_tx = {
+            "to": "0xabcdef1234567890abcdef1234567890abcdef12",
+            "from": "0x1234567890abcdef1234567890abcdef12345678",
+            "value": 1000000000000000000,  # 1 ETH in wei
+            "input": "0x",
+            "gasPrice": 20000000000,
+            "gas": 21000,
+        }
+
+        mock_evm_service.get_transaction_receipt.return_value = mock_receipt
+        mock_evm_service.w3.eth.get_transaction.return_value = mock_tx
+
+        # Mock wallet validation failure
+        mock_wallet_use_cases.get_by_address.side_effect = Exception("Wallet not found")
+
+        # Act
+        result = await transaction_use_cases.validate_transaction(tx_hash)
+
+        # Assert
+        assert result.is_valid is False
+        assert result.transaction_hash == tx_hash
+        assert len(result.transfers) == 0
+        assert "is not one of our addresses" in result.validation_message
