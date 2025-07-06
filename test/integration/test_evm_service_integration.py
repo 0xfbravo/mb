@@ -181,7 +181,6 @@ class TestEVMServiceIntegration:
         }
 
         # Sign and send transaction
-        signed_tx = evm_service.sign_transaction(tx, wallet1.key.hex())
         tx_hash = evm_service.send_transaction(tx, wallet1.key.hex())
 
         # Get receipt

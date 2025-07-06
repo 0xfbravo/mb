@@ -5,7 +5,6 @@ These tests verify individual functions and components in isolation.
 """
 
 import json
-import os
 from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
@@ -282,7 +281,8 @@ class TestEVMService:
             wallet_address, token_address, "custom_token"
         )
 
-        # Note: The current implementation always divides by 10^18, which might not be correct
+        # Note: The current implementation always divides by 10^18, which might
+        # not be correct
         # for tokens with different decimals. This test documents the current behavior.
         assert result == 1e-12  # 1000000 / 10^18
 
@@ -334,7 +334,8 @@ class TestEVMService:
         result = evm_service.get_wallet_balance(wallet_address)
 
         assert result == 1.0  # 1 ETH
-        # The method converts the address to Address type, so we need to check the call was made
+        # The method converts the address to Address type, so we need to check
+        # the call was made
         mock_web3.eth.get_balance.assert_called_once()
 
     def test_get_wallet_balance_zero(self, evm_service, mock_web3):

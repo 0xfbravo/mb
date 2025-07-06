@@ -13,7 +13,7 @@ import pytest
 import yaml
 
 from app.domain.assets_use_cases import AssetsUseCases
-from app.domain.errors import AssetNotFoundError, InvalidNetworkError
+from app.domain.errors import AssetNotFoundError
 from app.utils.config_manager import ConfigManager
 
 
@@ -373,7 +373,7 @@ class TestAssetsUseCasesIntegration:
             with pytest.raises(Exception):  # ConfigManager will fail
                 config_manager = ConfigManager()
                 logger = MagicMock()
-                assets_use_cases = AssetsUseCases(config_manager, logger)
+                _ = AssetsUseCases(config_manager, logger)
 
     def test_asset_address_case_sensitivity(
         self, assets_use_cases_integration, mock_logger

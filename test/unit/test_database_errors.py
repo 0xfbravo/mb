@@ -1,7 +1,5 @@
 """Tests for centralized database errors."""
 
-import pytest
-
 from app.data.database.errors import (DatabaseConnectionError, DatabaseError,
                                       TransactionCreationError,
                                       TransactionError,

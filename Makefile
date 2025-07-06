@@ -196,8 +196,8 @@ mocks:
 .PHONY: lint
 lint: setup-lint fmt
 	@echo "${CYAN}🔍 Running linter...${NC}"
-	@venv/bin/${FLAKE8} app/ main.py
-	@venv/bin/${MYPY} app/ main.py
+	@venv/bin/${FLAKE8} app/ test/ main.py
+	@venv/bin/${MYPY} app/ test/ main.py
 
 .PHONY: lint/fix
 lint/fix: setup-lint

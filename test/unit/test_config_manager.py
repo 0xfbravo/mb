@@ -7,7 +7,6 @@ for managing configuration settings for the web3 service.
 
 import os
 import tempfile
-from pathlib import Path
 from unittest.mock import mock_open, patch
 
 import pytest
@@ -139,7 +138,8 @@ class TestConfigManager:
             config_manager.get_asset("INVALID")
 
     def test_config_file_not_found(self):
-        """Test that ConfigManager raises FileNotFoundError when config file doesn't exist."""
+        """Test that ConfigManager raises FileNotFoundError when config file
+        doesn't exist."""
         with patch("os.path.join", return_value="/nonexistent/config.yaml"):
             with pytest.raises(FileNotFoundError):
                 ConfigManager()

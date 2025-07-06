@@ -6,26 +6,19 @@ the integration between all dependencies including the database, EVM service,
 and assets use cases.
 """
 
-import asyncio
 from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
-from eth_typing import HexAddress
 
 from app.data.database import Wallet as DBWallet
 from app.data.evm.main import EVMService
 from app.domain.assets_use_cases import AssetsUseCases
-from app.domain.errors import (
-    BatchOperationError,
-    DatabaseError,
-    EVMServiceError,
-    InvalidPaginationError,
-    InvalidWalletAddressError,
-    WalletCreationError,
-)
 from app.domain.enums import WalletStatus
+from app.domain.errors import (BatchOperationError, DatabaseError,
+                               InvalidPaginationError,
+                               InvalidWalletAddressError)
 from app.domain.wallet_models import Pagination, Wallet, WalletsPagination
 from app.domain.wallet_use_cases import WalletUseCases
 from app.utils.config_manager import ConfigManager
@@ -83,7 +76,9 @@ class TestWalletUseCasesIntegration:
         return assets_use_cases
 
     @pytest.fixture
-    def wallet_use_cases(self, mock_wallet_repo, mock_evm_service, assets_use_cases, mock_logger):
+    def wallet_use_cases(
+        self, mock_wallet_repo, mock_evm_service, assets_use_cases, mock_logger
+    ):
         """Create a WalletUseCases instance with real and mocked dependencies."""
         return WalletUseCases(
             wallet_repo=mock_wallet_repo,
@@ -98,7 +93,9 @@ class TestWalletUseCasesIntegration:
         return {
             "id": uuid4(),
             "address": "0x1234567890abcdef1234567890abcdef12345678",
-            "private_key": "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
+            "private_key": (
+                "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
+            ),
             "status": WalletStatus.ACTIVE,
             "created_at": datetime.now(),
             "updated_at": datetime.now(),
@@ -113,14 +110,21 @@ class TestWalletUseCasesIntegration:
     @pytest.mark.integration
     @pytest.mark.asyncio
     async def test_create_wallet_full_integration(
-        self, wallet_use_cases, mock_wallet_repo, mock_evm_service, mock_logger, sample_db_wallet
+        self,
+        wallet_use_cases,
+        mock_wallet_repo,
+        mock_evm_service,
+        mock_logger,
+        sample_db_wallet,
     ):
         """Test full integration of wallet creation process."""
         # Arrange
         mock_wallet = MagicMock()
         mock_wallet.address = "0x1234567890abcdef1234567890abcdef12345678"
-        mock_wallet.key.hex.return_value = "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
-        
+        mock_wallet.key.hex.return_value = (
+            "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
+        )
+
         mock_evm_service.create_wallet.return_value = mock_wallet
         mock_wallet_repo.create.return_value = sample_db_wallet
 
@@ -133,7 +137,7 @@ class TestWalletUseCasesIntegration:
         assert result[0].address == sample_db_wallet.address
         assert result[0].private_key == sample_db_wallet.private_key
         assert result[0].status == sample_db_wallet.status
-        
+
         # Verify all dependencies were called correctly
         mock_evm_service.create_wallet.assert_called_once()
         mock_wallet_repo.create.assert_called_once_with(
@@ -141,13 +145,20 @@ class TestWalletUseCasesIntegration:
             private_key=mock_wallet.key.hex(),
         )
         mock_logger.info.assert_any_call("Creating wallet")
-        mock_logger.info.assert_any_call(f"Successfully created wallet: {mock_wallet.address}")
+        mock_logger.info.assert_any_call(
+            f"Successfully created wallet: {mock_wallet.address}"
+        )
         mock_logger.info.assert_any_call("Successfully created 1 wallets")
 
     @pytest.mark.integration
     @pytest.mark.asyncio
     async def test_create_multiple_wallets_full_integration(
-        self, wallet_use_cases, mock_wallet_repo, mock_evm_service, mock_logger, sample_db_wallet
+        self,
+        wallet_use_cases,
+        mock_wallet_repo,
+        mock_evm_service,
+        mock_logger,
+        sample_db_wallet,
     ):
         """Test full integration of multiple wallet creation process."""
         # Arrange
@@ -156,9 +167,11 @@ class TestWalletUseCasesIntegration:
         for i in range(number_of_wallets):
             mock_wallet = MagicMock()
             mock_wallet.address = f"0x1234567890abcdef1234567890abcdef1234567{i}"
-            mock_wallet.key.hex.return_value = f"0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef123456789{i}"
+            mock_wallet.key.hex.return_value = (
+                f"0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef123456789{i}"
+            )
             mock_wallets.append(mock_wallet)
-        
+
         mock_evm_service.create_wallet.side_effect = mock_wallets
         mock_wallet_repo.create.return_value = sample_db_wallet
 
@@ -182,7 +195,7 @@ class TestWalletUseCasesIntegration:
         limit = 10
         total_count = 25
         db_wallets = [sample_db_wallet] * 5
-        
+
         mock_wallet_repo.get_all.return_value = db_wallets
         mock_wallet_repo.get_count.return_value = total_count
 
@@ -197,11 +210,11 @@ class TestWalletUseCasesIntegration:
         assert result.pagination.page == page
         assert result.pagination.next_page == 3
         assert result.pagination.prev_page == 1
-        
+
         # Verify database calls
         mock_wallet_repo.get_all.assert_called_once_with(offset=10, limit=10)
         mock_wallet_repo.get_count.assert_called_once()
-        
+
         # Verify logging
         mock_logger.info.assert_any_call(
             f"Getting wallets with pagination: page={page}, limit={limit}"
@@ -226,10 +239,10 @@ class TestWalletUseCasesIntegration:
         assert result.address == sample_db_wallet.address
         assert result.private_key == sample_db_wallet.private_key
         assert result.status == sample_db_wallet.status
-        
+
         # Verify database call
         mock_wallet_repo.get_by_address.assert_called_once_with(address)
-        
+
         # Verify logging
         mock_logger.info.assert_any_call(f"Getting wallet by address: {address}")
         mock_logger.info.assert_any_call(f"Successfully retrieved wallet: {address}")
@@ -252,10 +265,10 @@ class TestWalletUseCasesIntegration:
         assert result.address == sample_db_wallet.address
         assert result.private_key == sample_db_wallet.private_key
         assert result.status == sample_db_wallet.status
-        
+
         # Verify database call
         mock_wallet_repo.delete.assert_called_once_with(address)
-        
+
         # Verify logging
         mock_logger.info.assert_any_call(f"Deleting wallet: {address}")
         mock_logger.info.assert_any_call(f"Successfully deleted wallet: {address}")
@@ -276,13 +289,15 @@ class TestWalletUseCasesIntegration:
 
         # Assert
         assert result == expected_balance
-        
+
         # Verify EVM service call
         mock_evm_service.get_wallet_balance.assert_called_once_with(address)
-        
+
         # Verify logging
         mock_logger.info.assert_any_call(f"Getting balance of wallet: {address}")
-        mock_logger.info.assert_any_call(f"Successfully retrieved balance: {expected_balance}")
+        mock_logger.info.assert_any_call(
+            f"Successfully retrieved balance: {expected_balance}"
+        )
 
     @pytest.mark.integration
     @pytest.mark.asyncio
@@ -296,7 +311,7 @@ class TestWalletUseCasesIntegration:
         asset_address = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
         expected_balance = 100.0
         abi_name = "erc20"
-        
+
         assets_use_cases.get_asset_address.return_value = asset_address
         mock_evm_service.get_token_balance.return_value = expected_balance
 
@@ -305,18 +320,22 @@ class TestWalletUseCasesIntegration:
 
         # Assert
         assert result == expected_balance
-        
+
         # Verify assets use cases call
         assets_use_cases.get_asset_address.assert_called_once_with(asset)
-        
+
         # Verify EVM service call
-        mock_evm_service.get_token_balance.assert_called_once_with(address, asset_address, abi_name)
-        
+        mock_evm_service.get_token_balance.assert_called_once_with(
+            address, asset_address, abi_name
+        )
+
         # Verify logging
         mock_logger.info.assert_any_call(
             f"Getting token balance of wallet: {address} for asset: {asset}"
         )
-        mock_logger.info.assert_any_call(f"Successfully retrieved token balance: {expected_balance}")
+        mock_logger.info.assert_any_call(
+            f"Successfully retrieved token balance: {expected_balance}"
+        )
 
     @pytest.mark.integration
     @pytest.mark.asyncio
@@ -333,8 +352,13 @@ class TestWalletUseCasesIntegration:
 
         assert "wallet creation" in str(exc_info.value)
         assert "EVM service error" in str(exc_info.value)
-        mock_logger.error.assert_any_call("EVM service error creating wallet: EVM service error")
-        mock_logger.error.assert_any_call("Error in batch wallet creation: EVM service error during creating wallet: EVM service error")
+        mock_logger.error.assert_any_call(
+            "EVM service error creating wallet: EVM service error"
+        )
+        mock_logger.error.assert_any_call(
+            "Error in batch wallet creation: EVM service error during creating "
+            "wallet: EVM service error"
+        )
 
     @pytest.mark.integration
     @pytest.mark.asyncio
@@ -345,8 +369,10 @@ class TestWalletUseCasesIntegration:
         # Arrange
         mock_wallet = MagicMock()
         mock_wallet.address = "0x1234567890abcdef1234567890abcdef12345678"
-        mock_wallet.key.hex.return_value = "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
-        
+        mock_wallet.key.hex.return_value = (
+            "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
+        )
+
         mock_evm_service.create_wallet.return_value = mock_wallet
         mock_wallet_repo.create.side_effect = RuntimeError("Database error")
 
@@ -359,18 +385,22 @@ class TestWalletUseCasesIntegration:
         mock_logger.error.assert_any_call(
             f"Database error creating wallet {mock_wallet.address}: Database error"
         )
-        mock_logger.error.assert_any_call("Error in batch wallet creation: Database error during creating wallet: Database error")
+        mock_logger.error.assert_any_call(
+            "Error in batch wallet creation: Database error during creating "
+            "wallet: Database error"
+        )
 
     @pytest.mark.integration
     @pytest.mark.asyncio
     async def test_error_propagation_assets_service_failure(
         self, wallet_use_cases, assets_use_cases, mock_logger
     ):
-        """Test error propagation when assets service fails during token balance retrieval."""
+        """Test error propagation when assets service fails during token balance
+        retrieval."""
         # Arrange
         asset = "INVALID_ASSET"
         address = "0x1234567890abcdef1234567890abcdef12345678"
-        
+
         # Mock assets use cases to raise an error
         assets_use_cases.get_asset_address.side_effect = Exception("Asset not found")
 
@@ -379,12 +409,19 @@ class TestWalletUseCasesIntegration:
             await wallet_use_cases.get_token_balance(asset, address)
 
         assert "Asset not found" in str(exc_info.value)
-        mock_logger.error.assert_called_with("Unexpected error getting token balance: Asset not found")
+        mock_logger.error.assert_called_with(
+            "Unexpected error getting token balance: Asset not found"
+        )
 
     @pytest.mark.integration
     @pytest.mark.asyncio
     async def test_concurrent_operations_integration(
-        self, wallet_use_cases, mock_wallet_repo, mock_evm_service, mock_logger, sample_db_wallet
+        self,
+        wallet_use_cases,
+        mock_wallet_repo,
+        mock_evm_service,
+        mock_logger,
+        sample_db_wallet,
     ):
         """Test concurrent operations work correctly in integration."""
         # Arrange
@@ -393,9 +430,11 @@ class TestWalletUseCasesIntegration:
         for i in range(number_of_wallets):
             mock_wallet = MagicMock()
             mock_wallet.address = f"0x1234567890abcdef1234567890abcdef1234567{i}"
-            mock_wallet.key.hex.return_value = f"0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef123456789{i}"
+            mock_wallet.key.hex.return_value = (
+                f"0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef123456789{i}"
+            )
             mock_wallets.append(mock_wallet)
-        
+
         mock_evm_service.create_wallet.side_effect = mock_wallets
         mock_wallet_repo.create.return_value = sample_db_wallet
 
@@ -416,7 +455,7 @@ class TestWalletUseCasesIntegration:
         # Test first page
         mock_wallet_repo.get_all.return_value = [sample_db_wallet] * 10
         mock_wallet_repo.get_count.return_value = 25
-        
+
         result = await wallet_use_cases.get_all(page=1, limit=10)
         assert result.pagination.prev_page is None
         assert result.pagination.next_page == 2
@@ -435,9 +474,7 @@ class TestWalletUseCasesIntegration:
 
     @pytest.mark.integration
     @pytest.mark.asyncio
-    async def test_validation_integration(
-        self, wallet_use_cases, mock_logger
-    ):
+    async def test_validation_integration(self, wallet_use_cases, mock_logger):
         """Test validation rules in integration."""
         # Test invalid page
         with pytest.raises(InvalidPaginationError) as exc_info:
@@ -467,14 +504,21 @@ class TestWalletUseCasesIntegration:
     @pytest.mark.integration
     @pytest.mark.asyncio
     async def test_logging_integration(
-        self, wallet_use_cases, mock_wallet_repo, mock_evm_service, mock_logger, sample_db_wallet
+        self,
+        wallet_use_cases,
+        mock_wallet_repo,
+        mock_evm_service,
+        mock_logger,
+        sample_db_wallet,
     ):
         """Test logging behavior in integration."""
         # Arrange
         mock_wallet = MagicMock()
         mock_wallet.address = "0x1234567890abcdef1234567890abcdef12345678"
-        mock_wallet.key.hex.return_value = "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
-        
+        mock_wallet.key.hex.return_value = (
+            "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
+        )
+
         mock_evm_service.create_wallet.return_value = mock_wallet
         mock_wallet_repo.create.return_value = sample_db_wallet
 
@@ -483,7 +527,9 @@ class TestWalletUseCasesIntegration:
 
         # Assert logging calls
         mock_logger.info.assert_any_call("Creating wallet")
-        mock_logger.info.assert_any_call(f"Successfully created wallet: {mock_wallet.address}")
+        mock_logger.info.assert_any_call(
+            f"Successfully created wallet: {mock_wallet.address}"
+        )
         mock_logger.info.assert_any_call("Successfully created 1 wallets")
 
     @pytest.mark.integration
@@ -533,8 +579,13 @@ class TestWalletUseCasesIntegration:
 
         assert "wallet creation" in str(exc_info.value)
         assert "Batch error" in str(exc_info.value)
-        mock_logger.error.assert_any_call("EVM service error creating wallet: Batch error")
-        mock_logger.error.assert_any_call("Error in batch wallet creation: EVM service error during creating wallet: Batch error")
+        mock_logger.error.assert_any_call(
+            "EVM service error creating wallet: Batch error"
+        )
+        mock_logger.error.assert_any_call(
+            "Error in batch wallet creation: EVM service error during creating "
+            "wallet: Batch error"
+        )
 
     @pytest.mark.integration
     @pytest.mark.asyncio
@@ -551,7 +602,9 @@ class TestWalletUseCasesIntegration:
 
         assert "getting wallets" in str(exc_info.value)
         assert "Database error" in str(exc_info.value)
-        mock_logger.error.assert_called_with("Database error getting wallets: Database error")
+        mock_logger.error.assert_called_with(
+            "Database error getting wallets: Database error"
+        )
 
     @pytest.mark.integration
     @pytest.mark.asyncio
@@ -568,4 +621,6 @@ class TestWalletUseCasesIntegration:
             await wallet_use_cases.get_native_balance(address)
 
         assert "EVM service error" in str(exc_info.value)
-        mock_logger.error.assert_called_with("Unexpected error getting balance: EVM service error") 
+        mock_logger.error.assert_called_with(
+            "Unexpected error getting balance: EVM service error"
+        )

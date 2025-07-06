@@ -1,7 +1,8 @@
 """
 Integration tests for the main FastAPI application.
 
-These tests verify that the main application works correctly with all components integrated.
+These tests verify that the main application works
+correctly with all components integrated.
 """
 
 import os

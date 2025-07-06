@@ -1,7 +1,5 @@
 """Tests for custom error classes."""
 
-import pytest
-
 from app.domain.errors import (AssetNotFoundError, AssetsError,
                                BatchOperationError, BusinessRuleError,
                                ConfigurationError)

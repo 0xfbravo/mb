@@ -7,7 +7,6 @@ it with real files and actual configuration scenarios.
 
 import os
 import tempfile
-from pathlib import Path
 
 import pytest
 import yaml

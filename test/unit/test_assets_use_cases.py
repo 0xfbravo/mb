@@ -5,10 +5,9 @@ This module contains unit tests for the AssetsUseCases class, which is responsib
 for handling asset-related business logic.
 """
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
-from eth_typing import HexAddress
 
 from app.domain.assets_use_cases import AssetsUseCases
 from app.domain.errors import AssetNotFoundError, InvalidNetworkError
@@ -67,7 +66,7 @@ class TestAssetsUseCases:
         mock_logger.info.assert_any_call(
             f"Checking if asset {asset} is the native asset"
         )
-        mock_logger.info.assert_any_call(f"Native asset: ETH for networkETHEREUM")
+        mock_logger.info.assert_any_call("Native asset: ETH for networkETHEREUM")
         mock_config_manager.get_native_asset.assert_called_once()
         mock_config_manager.get_current_network.assert_called_once()
 
@@ -88,7 +87,7 @@ class TestAssetsUseCases:
         mock_logger.info.assert_any_call(
             f"Checking if asset {asset} is the native asset"
         )
-        mock_logger.info.assert_any_call(f"Native asset: ETH for networkETHEREUM")
+        mock_logger.info.assert_any_call("Native asset: ETH for networkETHEREUM")
         mock_config_manager.get_native_asset.assert_called_once()
 
     def test_is_native_asset_config_manager_exception(
@@ -123,13 +122,14 @@ class TestAssetsUseCases:
         # Assert
         assert result == "ETH"
         mock_logger.info.assert_any_call("Getting native asset")
-        mock_logger.info.assert_any_call(f"Native asset: ETH for networkETHEREUM")
+        mock_logger.info.assert_any_call("Native asset: ETH for networkETHEREUM")
         mock_config_manager.get_native_asset.assert_called_once()
 
     def test_get_native_asset_config_manager_exception(
         self, assets_use_cases, mock_config_manager, mock_logger
     ):
-        """Test get_native_asset raises InvalidNetworkError when config_manager fails."""
+        """Test get_native_asset raises InvalidNetworkError when config_manager
+        fails."""
         # Arrange
         mock_config_manager.get_native_asset.side_effect = Exception("Config error")
         mock_config_manager.get_current_network.return_value = "ETHEREUM"
@@ -213,7 +213,7 @@ class TestAssetsUseCases:
 
         assert str(exc_info.value) == "Asset 'INVALID' not found on network 'ETHEREUM'"
         mock_logger.error.assert_called_with(
-            f"Error getting asset configuration: Config error"
+            "Error getting asset configuration: Config error"
         )
 
     def test_get_asset_address_success(
@@ -245,7 +245,8 @@ class TestAssetsUseCases:
     def test_get_asset_address_network_not_found(
         self, assets_use_cases, mock_config_manager, mock_logger
     ):
-        """Test get_asset_address raises AssetNotFoundError when network not in asset config."""
+        """Test get_asset_address raises AssetNotFoundError when network not in
+        asset config."""
         # Arrange
         asset = "USDC"
         network = "INVALID_NETWORK"
@@ -261,8 +262,7 @@ class TestAssetsUseCases:
             assets_use_cases.get_asset_address(asset)
 
         assert (
-            str(exc_info.value)
-            == f"Asset 'USDC' not found on network 'INVALID_NETWORK'"
+            str(exc_info.value) == "Asset 'USDC' not found on network 'INVALID_NETWORK'"
         )
         mock_logger.error.assert_any_call(
             f"Asset {asset} not configured for network {network}"
@@ -271,7 +271,8 @@ class TestAssetsUseCases:
     def test_get_asset_address_config_manager_exception(
         self, assets_use_cases, mock_config_manager, mock_logger
     ):
-        """Test get_asset_address raises AssetNotFoundError when config_manager fails."""
+        """Test get_asset_address raises AssetNotFoundError when config_manager
+        fails."""
         # Arrange
         asset = "USDC"
         mock_config_manager.get_asset.side_effect = Exception("Config error")
@@ -281,7 +282,9 @@ class TestAssetsUseCases:
             assets_use_cases.get_asset_address(asset)
 
         assert str(exc_info.value) == "Asset 'USDC' not found on network 'ETHEREUM'"
-        mock_logger.error.assert_any_call("Error getting asset address: Config error")
+        mock_logger.error.assert_called_with(
+            "Error getting asset address: Config error"
+        )
 
     def test_get_asset_address_invalid_hex(
         self, assets_use_cases, mock_config_manager, mock_logger
@@ -301,7 +304,7 @@ class TestAssetsUseCases:
         with pytest.raises(AssetNotFoundError) as exc_info:
             assets_use_cases.get_asset_address(asset)
 
-        assert str(exc_info.value) == f"Asset 'USDC' not found on network 'ETHEREUM'"
+        assert str(exc_info.value) == "Asset 'USDC' not found on network 'ETHEREUM'"
         mock_logger.error.assert_any_call(
             f"Invalid hex address format for asset {asset}: invalid_hex_address"
         )
@@ -377,7 +380,7 @@ class TestAssetsUseCases:
 
         # Assert
         mock_logger.error.assert_called_with(
-            f"Error getting asset configuration: Test error"
+            "Error getting asset configuration: Test error"
         )
 
     def test_hex_address_validation(

@@ -68,8 +68,8 @@ jobs:
       # Run linting
       - name: 🔍 Run linting
         run: |
-          flake8 app/ main.py
-          mypy app/ main.py
+          flake8 app/ test/ main.py
+          mypy app/ test/ main.py
         continue-on-error: false
 
       # Run security checks

@@ -5,7 +5,6 @@ These tests verify individual functions and components in isolation.
 """
 
 import os
-from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from dotenv import load_dotenv
@@ -30,13 +29,6 @@ class TestMainModuleUnit:
         import main
 
         assert isinstance(main.app, FastAPI)
-
-    def test_router_import_successful(self):
-        """Test that the router import is successful."""
-        import main
-
-        # This test verifies that the import doesn't raise an exception
-        assert True
 
     def test_module_imports_work(self):
         """Test that all required modules can be imported."""
