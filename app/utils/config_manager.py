@@ -34,7 +34,7 @@ class ConfigManager:
 
     def get_assets(self) -> list[str]:
         """Returns the assets on the config file"""
-        return self.config["assets"].keys()
+        return list(self.config["assets"].keys())
 
     def get_native_asset(self) -> str:
         """Returns the native asset on the config file"""

@@ -48,20 +48,28 @@ class TestConfigManager:
         """Create a ConfigManager instance with mock config."""
         with patch("builtins.open", mock_open(read_data=yaml.dump(sample_config))):
             with patch("os.path.abspath", return_value="/fake/path"):
-                with patch("os.path.dirname", side_effect=["/fake", "/fake/app", "/fake/app/utils"]):
+                with patch(
+                    "os.path.dirname",
+                    side_effect=["/fake", "/fake/app", "/fake/app/utils"],
+                ):
                     return ConfigManager()
 
     def test_init_loads_config_file(self, sample_config):
         """Test that ConfigManager loads the config file correctly."""
         with patch("builtins.open", mock_open(read_data=yaml.dump(sample_config))):
             with patch("os.path.abspath", return_value="/fake/path"):
-                with patch("os.path.dirname", side_effect=["/fake", "/fake/app", "/fake/app/utils"]):
+                with patch(
+                    "os.path.dirname",
+                    side_effect=["/fake", "/fake/app", "/fake/app/utils"],
+                ):
                     config_manager = ConfigManager()
                     assert config_manager.config == sample_config
 
     def test_init_with_real_file_path(self, sample_config):
         """Test ConfigManager initialization with real file path calculation."""
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as temp_file:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".yaml", delete=False
+        ) as temp_file:
             yaml.dump(sample_config, temp_file)
             temp_file_path = temp_file.name
 
@@ -95,8 +103,14 @@ class TestConfigManager:
     def test_get_rpc_url_valid_network(self, config_manager):
         """Test getting RPC URL for a valid network."""
         assert config_manager.get_rpc_url("TEST") == "test-url"
-        assert config_manager.get_rpc_url("ETHEREUM") == "https://ethereum-rpc.publicnode.com"
-        assert config_manager.get_rpc_url("ARBITRUM") == "https://arbitrum-one-rpc.publicnode.com"
+        assert (
+            config_manager.get_rpc_url("ETHEREUM")
+            == "https://ethereum-rpc.publicnode.com"
+        )
+        assert (
+            config_manager.get_rpc_url("ARBITRUM")
+            == "https://arbitrum-one-rpc.publicnode.com"
+        )
 
     def test_get_rpc_url_invalid_network(self, config_manager):
         """Test getting RPC URL for an invalid network raises ValueError."""
@@ -135,7 +149,10 @@ class TestConfigManager:
         invalid_yaml = "invalid: yaml: content: ["
         with patch("builtins.open", mock_open(read_data=invalid_yaml)):
             with patch("os.path.abspath", return_value="/fake/path"):
-                with patch("os.path.dirname", side_effect=["/fake", "/fake/app", "/fake/app/utils"]):
+                with patch(
+                    "os.path.dirname",
+                    side_effect=["/fake", "/fake/app", "/fake/app/utils"],
+                ):
                     with pytest.raises(yaml.YAMLError):
                         ConfigManager()
 
@@ -144,7 +161,10 @@ class TestConfigManager:
         empty_config = {}
         with patch("builtins.open", mock_open(read_data=yaml.dump(empty_config))):
             with patch("os.path.abspath", return_value="/fake/path"):
-                with patch("os.path.dirname", side_effect=["/fake", "/fake/app", "/fake/app/utils"]):
+                with patch(
+                    "os.path.dirname",
+                    side_effect=["/fake", "/fake/app", "/fake/app/utils"],
+                ):
                     config_manager = ConfigManager()
                     assert config_manager.config == empty_config
 
@@ -156,7 +176,10 @@ class TestConfigManager:
         }
         with patch("builtins.open", mock_open(read_data=yaml.dump(incomplete_config))):
             with patch("os.path.abspath", return_value="/fake/path"):
-                with patch("os.path.dirname", side_effect=["/fake", "/fake/app", "/fake/app/utils"]):
+                with patch(
+                    "os.path.dirname",
+                    side_effect=["/fake", "/fake/app", "/fake/app/utils"],
+                ):
                     config_manager = ConfigManager()
                     # Should not raise error during initialization
                     assert config_manager.config == incomplete_config
@@ -168,7 +191,9 @@ class TestConfigManager:
         """Test that get_networks returns a dict_keys object."""
         networks = config_manager.get_networks()
         assert hasattr(networks, "__iter__")
-        assert sorted(list(networks)) == sorted(["TEST", "LOCAL", "ETHEREUM", "ARBITRUM"])
+        assert sorted(list(networks)) == sorted(
+            ["TEST", "LOCAL", "ETHEREUM", "ARBITRUM"]
+        )
 
     def test_assets_dict_keys_return_type(self, config_manager):
         """Test that get_assets returns a dict_keys object."""
@@ -180,7 +205,7 @@ class TestConfigManager:
         """Test that get_rpc_url is case sensitive."""
         # Should work with exact case
         assert config_manager.get_rpc_url("TEST") == "test-url"
-        
+
         # Should fail with different case
         with pytest.raises(ValueError, match="Network test not found in config"):
             config_manager.get_rpc_url("test")
@@ -190,7 +215,7 @@ class TestConfigManager:
         # Should work with exact case
         usdc_config = config_manager.get_asset("USDC")
         assert "ETHEREUM" in usdc_config
-        
+
         # Should fail with different case
         with pytest.raises(ValueError, match="Asset usdc not found in config"):
             config_manager.get_asset("usdc")
@@ -199,16 +224,27 @@ class TestConfigManager:
         """Test that each ConfigManager instance loads config independently."""
         with patch("builtins.open", mock_open(read_data=yaml.dump(sample_config))):
             with patch("os.path.abspath", return_value="/fake/path"):
-                with patch("os.path.dirname", side_effect=["/fake", "/fake/app", "/fake/app/utils"]):
+                with patch(
+                    "os.path.dirname",
+                    side_effect=["/fake", "/fake/app", "/fake/app/utils"],
+                ):
                     config_manager1 = ConfigManager()
-                
-                with patch("os.path.dirname", side_effect=["/fake", "/fake/app", "/fake/app/utils"]):
+
+                with patch(
+                    "os.path.dirname",
+                    side_effect=["/fake", "/fake/app", "/fake/app/utils"],
+                ):
                     config_manager2 = ConfigManager()
-                    
+
                     # Each instance should have its own config
                     assert config_manager1 is not config_manager2
                     assert config_manager1.config == config_manager2.config
-                    
+
                     # Both should return the same data
-                    assert config_manager1.get_current_network() == config_manager2.get_current_network()
-                    assert sorted(list(config_manager1.get_networks())) == sorted(list(config_manager2.get_networks())) 
+                    assert (
+                        config_manager1.get_current_network()
+                        == config_manager2.get_current_network()
+                    )
+                    assert sorted(list(config_manager1.get_networks())) == sorted(
+                        list(config_manager2.get_networks())
+                    )

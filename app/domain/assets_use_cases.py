@@ -1,3 +1,4 @@
+import re
 from typing import Any
 
 from ens.utils import HexStr  # type: ignore
@@ -13,6 +14,18 @@ class AssetsUseCases:
     def __init__(self, config_manager: ConfigManager, logger: Any):
         self._config_manager = config_manager
         self._logger = logger
+
+    def _is_valid_hex_address(self, address: str) -> bool:
+        """Check if the address is a valid hex address.
+        Args:
+            address: The address to validate.
+        Returns:
+            True if the address is valid, False otherwise.
+        """
+        # Check if it's a valid Ethereum address format
+        # (0x followed by 40 hex characters)
+        pattern = r"^0x[a-fA-F0-9]{40}$"
+        return bool(re.match(pattern, address))
 
     def is_native_asset(self, asset: str) -> bool:
         """Check if the asset is the native asset.
@@ -103,10 +116,17 @@ class AssetsUseCases:
                 )
                 raise AssetNotFoundError(asset, network)
 
-            self._logger.info(
-                f"Successfully retrieved asset address: {asset_config[network]}"
-            )
-            return HexAddress(HexStr(asset_config[network]))
+            address = asset_config[network]
+
+            # Validate hex address format
+            if not self._is_valid_hex_address(address):
+                self._logger.error(
+                    f"Invalid hex address format for asset {asset}: {address}"
+                )
+                raise AssetNotFoundError(asset, network)
+
+            self._logger.info(f"Successfully retrieved asset address: {address}")
+            return HexAddress(HexStr(address))
         except Exception as e:
             self._logger.error(f"Error getting asset address: {e}")
             raise AssetNotFoundError(asset, self._config_manager.get_current_network())
