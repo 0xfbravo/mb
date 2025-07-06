@@ -209,6 +209,11 @@ class EVMServiceError(TransactionError):
 class InsufficientBalanceError(TransactionError):
     """Raised when the balance is insufficient."""
 
-    def __init__(self, asset: str):
+    def __init__(self, asset: str, balance: float, amount: float):
         self.asset = asset
-        super().__init__(f"Insufficient balance for {asset}")
+        self.balance = balance
+        self.amount = amount
+        super().__init__(
+            f"Insufficient balance for trading {asset}:"
+            f"{balance} {asset} < {amount} {asset}"
+        )

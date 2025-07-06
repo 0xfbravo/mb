@@ -4,8 +4,11 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.domain.errors import (EmptyAddressError, EmptyTransactionIdError,
-                               InvalidAmountError, InvalidAssetError,
-                               InvalidPaginationError, SameAddressError)
+                               InsufficientBalanceError, InvalidAmountError,
+                               InvalidAssetError, InvalidNetworkError,
+                               InvalidPaginationError,
+                               InvalidWalletPrivateKeyError, SameAddressError,
+                               WalletNotFoundError)
 from app.domain.tx_models import CreateTx, Transaction, TransactionsPagination
 from app.utils.di import DependencyInjection, get_dependency_injection
 
@@ -30,6 +33,10 @@ async def create_tx(
         InvalidAmountError,
         SameAddressError,
         EmptyAddressError,
+        InsufficientBalanceError,
+        InvalidNetworkError,
+        InvalidWalletPrivateKeyError,
+        WalletNotFoundError,
     ) as e:
         raise HTTPException(status_code=400, detail=str(e))
     except RuntimeError:

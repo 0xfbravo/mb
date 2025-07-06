@@ -24,25 +24,29 @@ class ConfigManager:
 
         self.config = config
 
-    def get_selected_network(self):
+    def get_current_network(self) -> str:
         """Returns the selected network on the config file"""
-        return self.config["selected"]
+        return self.config["current_network"]
 
-    def get_networks(self):
+    def get_networks(self) -> list[str]:
         """Returns the networks on the config file"""
         return self.config["networks"].keys()
 
-    def get_assets(self):
+    def get_assets(self) -> list[str]:
         """Returns the assets on the config file"""
         return self.config["assets"].keys()
 
-    def get_rpc_url(self, network: str):
+    def get_native_asset(self) -> str:
+        """Returns the native asset on the config file"""
+        return self.config["native_asset"]
+
+    def get_rpc_url(self, network: str) -> str:
         """Returns the rpc url for a given network"""
         if network not in self.get_networks():
             raise ValueError(f"Network {network} not found in config")
         return self.config["networks"][network]
 
-    def get_asset(self, asset: str):
+    def get_asset(self, asset: str) -> dict[str, str]:
         """Returns the asset config for a given asset"""
         if asset not in self.get_assets():
             raise ValueError(f"Asset {asset} not found in config")

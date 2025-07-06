@@ -2,7 +2,7 @@ from typing import Any
 from uuid import UUID
 
 from eth_typing import HexAddress
-from web3.types import TxParams
+from web3.types import TxParams, Wei
 
 from app.data.database import TransactionRepository
 from app.data.evm.main import EVMService
@@ -36,94 +36,66 @@ class TransactionUseCases:
         self.tx_repo = tx_repo
         self.logger = logger
 
-    async def create(self, tx_data: CreateTx) -> Transaction:
+    async def create(self, create_tx: CreateTx) -> Transaction:
         """Create a new transaction."""
-        self.logger.info(f"Creating a new transaction for {tx_data.asset}")
+        self.logger.info(f"Creating a new transaction for {create_tx.asset}")
 
         try:
             # Validate the transaction data
-            selected_network = self.config_manager.get_selected_network()
-            assets = self.config_manager.get_assets()
-            if tx_data.asset not in assets:
-                self.logger.error(f"Asset {tx_data.asset} not available")
-                raise InvalidAssetError(tx_data.asset, selected_network)
+            current_network = self.config_manager.get_current_network()
+            if current_network not in self.config_manager.get_networks():
+                self.logger.error(f"Network {current_network} not available")
+                raise InvalidNetworkError(current_network)
 
-            if selected_network not in self.config_manager.get_networks():
-                self.logger.error(f"Network {selected_network} not available")
-                raise InvalidNetworkError(selected_network)
-
-            if tx_data.amount <= 0:
+            if create_tx.amount <= 0:
                 self.logger.error("Amount must be greater than 0")
-                raise InvalidAmountError(tx_data.amount)
+                raise InvalidAmountError(create_tx.amount)
 
-            if tx_data.from_address == tx_data.to_address:
+            if create_tx.from_address == create_tx.to_address:
                 self.logger.error("From address and to address cannot be the same")
-                raise SameAddressError(tx_data.from_address)
+                raise SameAddressError(create_tx.from_address)
 
-            if tx_data.from_address == "":
+            if create_tx.from_address == "":
                 self.logger.error("From address cannot be empty")
                 raise EmptyAddressError("From")
 
-            if tx_data.to_address == "":
+            if create_tx.to_address == "":
                 self.logger.error("To address cannot be empty")
                 raise EmptyAddressError("To")
 
-            asset_config = self.config_manager.get_asset(tx_data.asset)
+            native_asset = self.config_manager.get_native_asset()
+            is_native_asset = create_tx.asset == native_asset
 
-            if selected_network not in asset_config:
+            asset_config = {}
+            if not is_native_asset:
+                asset_config = self.config_manager.get_asset(create_tx.asset)
+
+            if current_network not in asset_config and not is_native_asset:
                 self.logger.error(
-                    f"Unable to transfer {tx_data.asset} on {selected_network}"
+                    f"Unable to transfer {create_tx.asset} on {current_network}"
                 )
                 raise EVMServiceError(
                     "transfer",
-                    f"Unable to transfer {tx_data.asset} on {selected_network}",
+                    f"Unable to transfer {create_tx.asset} on {current_network}",
                 )
 
-            # Get wallet private key
-            from_wallet = await self.wallet_use_cases.get_by_address(
-                tx_data.from_address
+            self.logger.info("Validating balance")
+            self._validate_balance(
+                create_tx.asset,
+                create_tx.from_address,
+                create_tx.amount,
+                current_network,
+                asset_config,
+                is_native_asset,
             )
-            if from_wallet is None:
-                self.logger.error(f"Wallet {tx_data.from_address} not found")
-                raise WalletNotFoundError(tx_data.from_address)
-            from_wallet_private_key = from_wallet.private_key
-
-            if from_wallet_private_key is None or from_wallet_private_key == "":
-                self.logger.error(f"Wallet {tx_data.from_address} has no private key")
-                raise InvalidWalletPrivateKeyError(tx_data.from_address)
-
-            # Validate user balance
-            self.logger.info(
-                f"Validating user balance for transaction in {selected_network}"
-            )
-            balance = 0.0
-            if asset_config["native"]:
-                balance = self.evm_service.get_wallet_balance(tx_data.from_address)
-            else:
-                balance = self.evm_service.get_token_balance(
-                    tx_data.from_address, HexAddress(asset_config[selected_network])
-                )
-
-            if balance < tx_data.amount:
-                self.logger.error(f"Insufficient balance for {tx_data.asset}")
-                raise InsufficientBalanceError(tx_data.asset)
 
             self.logger.info("Creating transaction data")
-
-            tx_params = TxParams()
-            if asset_config["native"]:
-                contract = self.evm_service.get_token_contract(
-                    HexAddress(asset_config[selected_network])
-                )
-            else:
-                contract = self.evm_service.get_token_contract(
-                    HexAddress(asset_config[selected_network])
-                )
-                tx_params = contract.functions.transfer(
-                    tx_data.to_address, tx_data.amount * 10**18
-                ).build_transaction()
-
-            self.logger.info("Sending transaction")
+            tx_params = self._create_tx_params(
+                create_tx, current_network, asset_config, is_native_asset
+            )
+            from_wallet_private_key = await self._validate_wallet_private_key(
+                create_tx.from_address
+            )
             tx_hash = self.evm_service.send_transaction(
                 tx_params, from_wallet_private_key
             )
@@ -131,22 +103,14 @@ class TransactionUseCases:
             self.logger.info("Saving transaction to database in pending state")
             db_transaction = await self.tx_repo.create(
                 tx_hash=tx_hash.hex(),
-                asset=tx_data.asset,
-                network=selected_network,
-                from_address=tx_data.from_address,
-                to_address=tx_data.to_address,
-                amount=tx_data.amount,
+                asset=create_tx.asset,
+                network=current_network,
+                from_address=create_tx.from_address,
+                to_address=create_tx.to_address,
+                amount=create_tx.amount,
                 gas_price=1000000000,
                 gas_limit=21000,
             )
-
-            asset = self.config_manager.get_asset(tx_data.asset)
-            if asset["native"]:
-                # TODO: Implement native transfer
-                pass
-            else:
-                # TODO: Implement ERC20 transfer
-                pass
 
             return Transaction().from_data(db_transaction)
         except (
@@ -154,6 +118,10 @@ class TransactionUseCases:
             InvalidAmountError,
             SameAddressError,
             EmptyAddressError,
+            InsufficientBalanceError,
+            InvalidNetworkError,
+            InvalidWalletPrivateKeyError,
+            WalletNotFoundError,
         ):
             # Re-raise domain-specific errors as they are already properly typed
             raise
@@ -163,6 +131,72 @@ class TransactionUseCases:
         except Exception as e:
             self.logger.error(f"Unexpected error creating transaction: {e}")
             raise
+
+    async def _validate_wallet_private_key(self, from_address: str) -> str:
+        """Validate that the wallet exists and has a valid private key."""
+        self.logger.info(f"Validating wallet {from_address}")
+        from_wallet = await self.wallet_use_cases.get_by_address(from_address)
+        if from_wallet is None:
+            self.logger.error(f"Wallet {from_address} not found")
+            raise WalletNotFoundError(from_address)
+
+        from_wallet_private_key = from_wallet.private_key
+        if from_wallet_private_key is None or from_wallet_private_key == "":
+            self.logger.error(f"Wallet {from_address} has no private key")
+            raise InvalidWalletPrivateKeyError(from_address)
+
+        self.logger.info(f"Wallet {from_address} exists and has a valid private key")
+        return from_wallet_private_key
+
+    def _create_tx_params(
+        self,
+        create_tx: CreateTx,
+        current_network: str,
+        asset_config: dict,
+        is_native_asset: bool,
+    ) -> TxParams:
+        """Create transaction parameters for the given transaction data."""
+        self.logger.info("Creating transaction parameters")
+        if is_native_asset:
+            self.logger.info("Creating native asset transaction parameters")
+            return TxParams(
+                to=create_tx.to_address,
+                value=Wei(int(create_tx.amount * 10**18)),
+            )
+        else:
+            self.logger.info("Getting token contract")
+            contract = self.evm_service.get_token_contract(
+                HexAddress(asset_config[current_network])
+            )
+            self.logger.info("Creating token transaction parameters")
+            return contract.functions.transfer(
+                create_tx.to_address, create_tx.amount * 10**18
+            ).build_transaction()
+
+    def _validate_balance(
+        self,
+        asset: str,
+        from_address: HexAddress,
+        amount: float,
+        current_network: str,
+        asset_config: dict,
+        is_native_asset: bool,
+    ) -> None:
+        """Validate that the wallet has sufficient balance for the transaction."""
+        self.logger.info(
+            f"Validating user balance for transaction in {current_network}"
+        )
+        balance = 0.0
+        if is_native_asset:
+            balance = self.evm_service.get_wallet_balance(from_address)
+        else:
+            balance = self.evm_service.get_token_balance(
+                from_address, asset_config[current_network]
+            )
+
+        if balance < amount:
+            self.logger.error(f"Insufficient balance for {asset}")
+            raise InsufficientBalanceError(asset, balance, amount)
 
     async def get_by_id(self, transaction_id: UUID) -> Transaction:
         """Get transaction by ID."""

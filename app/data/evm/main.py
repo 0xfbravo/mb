@@ -73,10 +73,15 @@ class EVMService:
         Raises:
             KeyError: If the ABI is not found.
         """
+        self.logger.info(f"Getting ABI: {abi_name}")
         if abi_name not in self.abis:
+            self.logger.error(
+                f"ABI '{abi_name}' not found. Available ABIs: {list(self.abis.keys())}"
+            )
             raise KeyError(
                 f"ABI '{abi_name}' not found. Available ABIs: {list(self.abis.keys())}"
             )
+        self.logger.info(f"ABI found: {abi_name}")
         return self.abis[abi_name]
 
     def list_available_abis(self) -> list:
@@ -86,7 +91,10 @@ class EVMService:
         Returns:
             List of available ABI names.
         """
-        return list(self.abis.keys())
+        self.logger.info("Listing available ABIs")
+        available_abis = list(self.abis.keys())
+        self.logger.info(f"Available ABIs: {available_abis}")
+        return available_abis
 
     # Create a new wallet
     def create_wallet(self) -> LocalAccount:
@@ -96,11 +104,14 @@ class EVMService:
         Returns:
             The new wallet created.
         """
+        self.logger.info("Creating a new wallet")
         account = self.w3.eth.account.create()
 
         if not account.address or not account.key:
+            self.logger.error("Failed to create wallet")
             raise RuntimeError("Failed to create wallet")
 
+        self.logger.info(f"New wallet created: {account.address}")
         return account
 
     # Get the balance of a wallet
@@ -114,10 +125,15 @@ class EVMService:
         Returns:
             The balance of the wallet.
         """
+        self.logger.info(f"Getting native balance of wallet {wallet_address}")
         balance_wei = self.w3.eth.get_balance(
             self.w3.to_checksum_address(wallet_address)
         )
         balance_eth = balance_wei / 10**18
+        self.logger.info(
+            f"Native balance of wallet {wallet_address}:"
+            f"{balance_eth} // {balance_wei} wei"
+        )
         return balance_eth
 
     def get_token_contract(
@@ -133,10 +149,15 @@ class EVMService:
         Returns:
             The contract of the token.
         """
+        self.logger.info(f"Getting token contract for {token_address}")
         abi = self.get_abi(abi_name)
-        return self.w3.eth.contract(
+        contract = self.w3.eth.contract(
             address=self.w3.to_checksum_address(token_address), abi=abi
         )
+        self.logger.info(
+            f"Successfully got token contract for {token_address} with abi {abi_name}"
+        )
+        return contract
 
     def get_token_balance(
         self,
@@ -156,9 +177,17 @@ class EVMService:
         Returns:
             The balance of the wallet.
         """
+        self.logger.info(
+            f"Getting token balance for {wallet_address} of {token_address}"
+        )
         contract = self.get_token_contract(token_address, abi_name)
         balance = contract.functions.balanceOf(wallet_address).call()
-        return balance / 10**18
+        balance_token = balance / 10**18
+        self.logger.info(
+            f"Token balance for {wallet_address} of {token_address}:"
+            f"{balance_token} // {balance} wei"
+        )
+        return balance_token
 
     # Sign transaction
     def sign_transaction(self, tx: TxParams, private_key: str) -> SignedTransaction:
@@ -172,7 +201,10 @@ class EVMService:
         Returns:
             The signed transaction.
         """
-        return self.w3.eth.account.sign_transaction(tx, private_key=private_key)
+        self.logger.info(f"Signing transaction {tx}")
+        signed_tx = self.w3.eth.account.sign_transaction(tx, private_key=private_key)
+        self.logger.info("Transaction signed")
+        return signed_tx
 
     # Send a transaction
     def send_transaction(self, tx: TxParams, private_key: str) -> HexBytes:
@@ -186,8 +218,11 @@ class EVMService:
         Returns:
             The transaction hash.
         """
+        self.logger.info(f"Sending transaction {tx}")
         signed_tx = self.sign_transaction(tx, private_key)
-        return self.w3.eth.send_raw_transaction(signed_tx.raw_transaction)
+        tx_hash = self.w3.eth.send_raw_transaction(signed_tx.raw_transaction)
+        self.logger.info(f"Transaction sent with hash {tx_hash.hex()}")
+        return tx_hash
 
     # Get the transaction receipt
     def get_transaction_receipt(self, transaction_hash: Hash32) -> TxReceipt:
@@ -200,9 +235,16 @@ class EVMService:
         Returns:
             The transaction receipt.
         """
+        # Convert string to HexBytes if needed
+        if isinstance(transaction_hash, str):
+            transaction_hash = HexBytes(transaction_hash)
+
+        self.logger.info(f"Getting transaction receipt for {transaction_hash.hex()}")
         receipt = self.w3.eth.get_transaction_receipt(transaction_hash)
         if receipt is None:
+            self.logger.error(f"Transaction receipt not found for {transaction_hash}")
             raise RuntimeError("Transaction receipt not found")
+        self.logger.info(f"Transaction receipt found: {receipt}")
         return receipt
 
     # Get the nonce of a wallet
@@ -213,6 +255,9 @@ class EVMService:
         Args:
             wallet_address: The address of the wallet.
         """
-        return self.w3.eth.get_transaction_count(
+        self.logger.info(f"Getting nonce for {wallet_address}")
+        nonce = self.w3.eth.get_transaction_count(
             self.w3.to_checksum_address(wallet_address)
         )
+        self.logger.info(f"Nonce for {wallet_address}: {nonce}")
+        return nonce

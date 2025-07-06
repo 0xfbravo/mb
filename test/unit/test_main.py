@@ -202,7 +202,8 @@ class TestRouterEndpointsUnit:
     def test_router_tags(self):
         """Test that routers have proper tags for OpenAPI documentation."""
         from app.presentation.api.health import router as health_router
-        from app.presentation.api.transaction import router as transaction_router
+        from app.presentation.api.transaction import \
+            router as transaction_router
         from app.presentation.api.wallet import router as wallet_router
 
         # Check that routers have tags

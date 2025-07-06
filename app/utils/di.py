@@ -44,9 +44,9 @@ class DependencyInjection:
             self.db_manager = DatabaseManager(self.logger)
             self.config_manager = ConfigManager()
             self.evm_service = EVMService(
-                self.config_manager.get_selected_network() == "TEST",
+                self.config_manager.get_current_network() == "TEST",
                 self.config_manager.get_rpc_url(
-                    self.config_manager.get_selected_network()
+                    self.config_manager.get_current_network()
                 ),
                 self.logger,
             )

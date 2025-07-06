@@ -430,7 +430,9 @@ class TestEVMService:
         result = evm_service.get_transaction_receipt(transaction_hash)
 
         assert result == mock_receipt
-        mock_web3.eth.get_transaction_receipt.assert_called_once_with(transaction_hash)
+        mock_web3.eth.get_transaction_receipt.assert_called_once_with(
+            HexBytes(transaction_hash)
+        )
 
     def test_get_transaction_receipt_not_found(self, evm_service, mock_web3):
         """Test getting transaction receipt when not found."""
@@ -443,7 +445,9 @@ class TestEVMService:
         with pytest.raises(RuntimeError, match="Transaction receipt not found"):
             evm_service.get_transaction_receipt(transaction_hash)
 
-        mock_web3.eth.get_transaction_receipt.assert_called_once_with(transaction_hash)
+        mock_web3.eth.get_transaction_receipt.assert_called_once_with(
+            HexBytes(transaction_hash)
+        )
 
     def test_get_transaction_receipt_with_different_hash(self, evm_service, mock_web3):
         """Test getting transaction receipt with a different hash format."""
@@ -459,7 +463,9 @@ class TestEVMService:
         result = evm_service.get_transaction_receipt(transaction_hash)
 
         assert result == mock_receipt
-        mock_web3.eth.get_transaction_receipt.assert_called_once_with(transaction_hash)
+        mock_web3.eth.get_transaction_receipt.assert_called_once_with(
+            HexBytes(transaction_hash)
+        )
 
 
 class TestEVMServiceIntegration:
