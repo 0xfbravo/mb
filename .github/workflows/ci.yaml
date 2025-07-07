@@ -79,6 +79,19 @@ jobs:
         with:
           api-key: ${{ secrets.SAFETY_API_KEY }}
 
+      # Generate Junit reports
+      - name: 📝 Generate Junit reports
+        run: |
+          pytest --cov --junitxml=junit.xml -o junit_family=legacy
+        continue-on-error: false
+
+      # Upload test results to Codecov
+      - name: 📤 Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
       # Run tests and generate coverage
       - name: 🧪 Run tests and generate coverage
         run: |
