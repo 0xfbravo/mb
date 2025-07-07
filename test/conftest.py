@@ -131,17 +131,19 @@ def mock_config_manager():
 
 
 @pytest.fixture
-def mock_dependency_injection():
+def mock_dependency_injection(mock_logger, mock_db_manager, mock_wallet_repository, mock_transaction_repository):
     """Create a mock dependency injection container for testing."""
     di = MagicMock()
     di.initialize = AsyncMock()
     di.shutdown = AsyncMock()
-    di.logger = mock_logger()
-    di.db_manager = mock_db_manager()
-    di.wallet_repo = mock_wallet_repository()
-    di.tx_repo = mock_transaction_repository()
+    di.logger = mock_logger
+    di.db_manager = mock_db_manager
+    di.wallet_repo = mock_wallet_repository
+    di.tx_repo = mock_transaction_repository
     di.wallet_uc = MagicMock()
-    di.tx_use_cases = MagicMock()
+    di.tx_uc = MagicMock()
+    di.assets_uc = MagicMock()
+    di.is_database_initialized = MagicMock(return_value=True)
     return di
 
 
