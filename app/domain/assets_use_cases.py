@@ -1,8 +1,7 @@
 import re
 from typing import Any
 
-from ens.utils import HexStr  # type: ignore
-from eth_typing import HexAddress
+from eth_typing import HexAddress, HexStr
 
 from app.domain.errors import AssetNotFoundError, InvalidNetworkError
 from app.utils.config_manager import ConfigManager

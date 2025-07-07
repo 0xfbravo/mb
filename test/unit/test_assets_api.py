@@ -2,16 +2,14 @@
 Unit tests for assets API endpoints.
 """
 
-import pytest
-from fastapi import HTTPException
 from unittest.mock import MagicMock
 
-from app.presentation.api.assets import (
-    get_all_assets,
-    get_native_asset,
-    get_asset,
-)
+import pytest
+from fastapi import HTTPException
+
 from app.domain.errors import AssetNotFoundError, InvalidNetworkError
+from app.presentation.api.assets import (get_all_assets, get_asset,
+                                         get_native_asset)
 
 
 class TestGetAllAssets:
@@ -27,7 +25,9 @@ class TestGetAllAssets:
     @pytest.mark.asyncio
     async def test_get_all_assets_db_not_initialized(self, mock_dependency_injection):
         mock_di = mock_dependency_injection
-        mock_di.assets_uc.get_all_assets = MagicMock(side_effect=RuntimeError("Database not initialized"))
+        mock_di.assets_uc.get_all_assets = MagicMock(
+            side_effect=RuntimeError("Database not initialized")
+        )
         request = MagicMock()
         with pytest.raises(HTTPException) as exc_info:
             await get_all_assets(request=request, di=mock_di)
@@ -38,7 +38,9 @@ class TestGetAllAssets:
     @pytest.mark.asyncio
     async def test_get_all_assets_general_error(self, mock_dependency_injection):
         mock_di = mock_dependency_injection
-        mock_di.assets_uc.get_all_assets = MagicMock(side_effect=Exception("General error"))
+        mock_di.assets_uc.get_all_assets = MagicMock(
+            side_effect=Exception("General error")
+        )
         request = MagicMock()
         with pytest.raises(HTTPException) as exc_info:
             await get_all_assets(request=request, di=mock_di)
@@ -60,7 +62,9 @@ class TestGetNativeAsset:
     @pytest.mark.asyncio
     async def test_get_native_asset_error(self, mock_dependency_injection):
         mock_di = mock_dependency_injection
-        mock_di.assets_uc.get_native_asset = MagicMock(side_effect=Exception("General error"))
+        mock_di.assets_uc.get_native_asset = MagicMock(
+            side_effect=Exception("General error")
+        )
         request = MagicMock()
         with pytest.raises(HTTPException) as exc_info:
             await get_native_asset(request=request, di=mock_di)
@@ -73,7 +77,9 @@ class TestGetAsset:
     @pytest.mark.asyncio
     async def test_get_asset_success(self, mock_dependency_injection):
         mock_di = mock_dependency_injection
-        mock_di.assets_uc.get_asset = MagicMock(return_value={"symbol": "ETH", "decimals": 18})
+        mock_di.assets_uc.get_asset = MagicMock(
+            return_value={"symbol": "ETH", "decimals": 18}
+        )
         request = MagicMock()
         asset = "ETH"
         result = await get_asset(request=request, asset=asset, di=mock_di)
@@ -83,7 +89,9 @@ class TestGetAsset:
     @pytest.mark.asyncio
     async def test_get_asset_not_found(self, mock_dependency_injection):
         mock_di = mock_dependency_injection
-        mock_di.assets_uc.get_asset = MagicMock(side_effect=AssetNotFoundError("FOO", "ethereum"))
+        mock_di.assets_uc.get_asset = MagicMock(
+            side_effect=AssetNotFoundError("FOO", "ethereum")
+        )
         request = MagicMock()
         asset = "FOO"
         with pytest.raises(HTTPException) as exc_info:
@@ -94,7 +102,9 @@ class TestGetAsset:
     @pytest.mark.asyncio
     async def test_get_asset_invalid_network(self, mock_dependency_injection):
         mock_di = mock_dependency_injection
-        mock_di.assets_uc.get_asset = MagicMock(side_effect=InvalidNetworkError("Invalid network"))
+        mock_di.assets_uc.get_asset = MagicMock(
+            side_effect=InvalidNetworkError("Invalid network")
+        )
         request = MagicMock()
         asset = "FOO"
         with pytest.raises(HTTPException) as exc_info:
@@ -112,4 +122,4 @@ class TestGetAsset:
             await get_asset(request=request, asset=asset, di=mock_di)
         assert exc_info.value.status_code == 500
         assert exc_info.value.detail == "Unable to get asset"
-        mock_di.logger.error.assert_called_once() 
+        mock_di.logger.error.assert_called_once()
