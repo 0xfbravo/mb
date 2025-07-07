@@ -26,7 +26,7 @@ make setup
 cp .env.example .env
 
 # Start the application environment with Docker Compose
-make up/build/dev
+make up/build
 ```
 
 Open a new browser tab and navigate to http://localhost:8000/docs or http://localhost:8000/redoc to see the API documentation.
