@@ -24,12 +24,16 @@ attrs==25.3.0
     # via aiohttp
 bitarray==3.4.3
     # via eth-account
+cached-property==2.0.1
+    # via py-evm
 certifi==2025.6.15
     # via requests
 charset-normalizer==3.4.2
     # via requests
 ckzg==2.1.1
-    # via eth-account
+    # via
+    #   eth-account
+    #   py-evm
 click==8.0.2
     # via
     #   -r requirements.in
@@ -43,12 +47,19 @@ email-validator==2.2.0
 eth-abi==5.2.0
     # via
     #   eth-account
+    #   eth-tester
     #   web3
 eth-account==0.13.7
-    # via web3
+    # via
+    #   eth-tester
+    #   web3
+eth-bloom==3.1.0
+    # via py-evm
 eth-hash==0.7.1
     # via
+    #   eth-bloom
     #   eth-utils
+    #   trie
     #   web3
 eth-keyfile==0.8.1
     # via eth-account
@@ -56,13 +67,19 @@ eth-keys==0.7.0
     # via
     #   eth-account
     #   eth-keyfile
+    #   eth-tester
+    #   py-evm
 eth-rlp==2.2.0
     # via eth-account
+eth-tester==0.13.0b1
+    # via -r requirements.in
 eth-typing==5.2.1
     # via
     #   eth-abi
     #   eth-keys
     #   eth-utils
+    #   py-ecc
+    #   py-evm
     #   web3
 eth-utils==5.3.0
     # via
@@ -71,7 +88,11 @@ eth-utils==5.3.0
     #   eth-keyfile
     #   eth-keys
     #   eth-rlp
+    #   eth-tester
+    #   py-ecc
+    #   py-evm
     #   rlp
+    #   trie
     #   web3
 fastapi==0.115.14
     # via -r requirements.in
@@ -85,6 +106,7 @@ hexbytes==1.3.1
     # via
     #   eth-account
     #   eth-rlp
+    #   trie
     #   web3
 httptools==0.6.4
     # via uvicorn
@@ -98,6 +120,8 @@ iso8601==2.1.0
     # via tortoise-orm
 loguru==0.7.3
     # via -r requirements.in
+lru-dict==1.3.0
+    # via py-evm
 multidict==6.6.3
     # via
     #   aiohttp
@@ -114,6 +138,10 @@ psycopg-binary==3.2.9
     # via psycopg
 psycopg-pool==3.2.6
     # via psycopg
+py-ecc==8.0.0
+    # via py-evm
+py-evm==0.12.1b1
+    # via -r requirements.in
 pycryptodome==3.23.0
     # via
     #   eth-hash
@@ -153,14 +181,23 @@ rlp==4.1.0
     # via
     #   eth-account
     #   eth-rlp
+    #   eth-tester
+    #   py-evm
+    #   trie
+semantic-version==2.10.0
+    # via eth-tester
 sniffio==1.3.1
     # via anyio
+sortedcontainers==2.4.0
+    # via trie
 starlette==0.46.2
     # via fastapi
 toolz==1.0.0
     # via cytoolz
 tortoise-orm==0.25.1
     # via -r requirements.in
+trie==3.1.0
+    # via py-evm
 types-requests==2.32.4.20250611
     # via web3
 typing-extensions==4.14.1

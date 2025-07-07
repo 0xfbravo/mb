@@ -99,7 +99,9 @@ eth-keys==0.7.0
 eth-rlp==2.2.0
     # via eth-account
 eth-tester==0.13.0b1
-    # via web3
+    # via
+    #   -r /Users/0xfbravo/Developer/mb/requirements.in
+    #   web3
 eth-typing==5.2.1
     # via
     #   eth-abi
@@ -228,7 +230,9 @@ psycopg-pool==3.2.6
 py-ecc==8.0.0
     # via py-evm
 py-evm==0.12.1b1
-    # via eth-tester
+    # via
+    #   -r /Users/0xfbravo/Developer/mb/requirements.in
+    #   eth-tester
 py-geth==6.0.0
     # via web3
 pycodestyle==2.14.0
