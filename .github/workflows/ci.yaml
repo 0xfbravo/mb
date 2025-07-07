@@ -22,6 +22,21 @@ jobs:
     name: 🛠️ Run Python CI
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: mb_db
+          POSTGRES_USER: mb_user
+          POSTGRES_PASSWORD: mb_password
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 1425:5432
 
     steps:
       # Checkout code
@@ -41,7 +56,7 @@ jobs:
       - name: 📂 Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y make
+          sudo apt-get install -y make postgresql-client
         continue-on-error: false
 
       # Cache pip dependencies
@@ -60,10 +75,28 @@ jobs:
           pip install -r requirements-dev.txt
         continue-on-error: false
 
-      # Copy .env.example to .env
-      - name: 📝 Copy .env.example to .env
+      # Set environment variables for testing
+      - name: 📝 Set environment variables
         run: |
-          cp .env.example .env
+          echo "POSTGRES_HOST=127.0.0.1" >> $GITHUB_ENV
+          echo "POSTGRES_PORT=1425" >> $GITHUB_ENV
+          echo "POSTGRES_DB=mb_db" >> $GITHUB_ENV
+          echo "POSTGRES_USER=mb_user" >> $GITHUB_ENV
+          echo "POSTGRES_PASSWORD=mb_password" >> $GITHUB_ENV
+          echo "DB_POOL_MIN_SIZE=1" >> $GITHUB_ENV
+          echo "DB_POOL_MAX_SIZE=10" >> $GITHUB_ENV
+          echo "DB_POOL_MAX_IDLE=300" >> $GITHUB_ENV
+          echo "DB_POOL_TIMEOUT=30" >> $GITHUB_ENV
+          echo "ENV=test" >> $GITHUB_ENV
+          echo "PORT=8000" >> $GITHUB_ENV
+
+      # Wait for PostgreSQL to be ready
+      - name: ⏳ Wait for PostgreSQL
+        run: |
+          until pg_isready -h 127.0.0.1 -p 1425 -U mb_user -d mb_db; do
+            echo "Waiting for PostgreSQL to be ready..."
+            sleep 2
+          done
 
       # Run linting
       - name: 🔍 Run linting
@@ -95,7 +128,7 @@ jobs:
       # Run tests and generate coverage
       - name: 🧪 Run tests and generate coverage
         run: |
-          python -m pytest ./test/unit/ -v --cov=. --cov-report=term-missing --cov-report=html --cov-report=json
+          python -m pytest ./test/ -v --cov=. --cov-report=term-missing --cov-report=html --cov-report=json
         continue-on-error: false
 
       # Upload test coverage reports
